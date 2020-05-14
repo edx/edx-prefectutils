@@ -1,0 +1,107 @@
+"""
+Tasks for fetching secrets from Vault.  There is a separate class per Vault
+"engine", and they should all extend VaultSecretBase which centralizes the
+logic to construct a Vault client from a Service Account JWT token.
+
+Example usage for VaultKVSecret:
+
+1. Create a KV secret at <https://vault.analytics.edx.org/ui/vault/secrets/kv/list>.
+
+2. If, for example, the new secret had a path of
+"snowflake_pipeline_etl_loader", use the following code pattern to use the
+secret in Prefect flows:
+
+    from vault_secrets import VaultKVSecret
+
+    @task
+    def load_data_into_snowflake(sf_credentials):
+        self.logger.info("logging into Snowflake with username: {}".format(credentials["user"]))
+        connection = create_snowflake_connection(credentials, role)
+        ...
+        connection.close()
+
+    with Flow("Load Data Into Snowflake") as flow:
+        sf_credentials = VaultKVSecret(
+            path="snowflake_pipeline_etl_loader",
+            version=3,
+        )
+        load_data_into_snowflake(sf_credentials)
+"""
+from prefect.tasks.secrets import SecretBase
+import hvac
+
+# This is a standardized k8s path to always find the service account JWT token.
+SERVICE_ACCOUNT_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+# Global configuration for accessing vault from all Prefect flows inside of the analytics k8s
+# cluster.
+VAULT_BASE_URL = "http://analytics-vault.vault:8200"
+VAULT_LOGIN_URL = VAULT_BASE_URL + "/v1/auth/kubernetes/login"
+VAULT_ROLE = "prefect"
+
+
+class VaultSecretBase(SecretBase):
+    """
+    A base Secret task that establishes the vault client which can be used by
+    extending classes to fetch secrets from Vault.
+
+    Extending classes should override self._get_secret(), and use
+    self.vault_client (instance of hvac.Client) to make requests.
+
+    Args:
+        **kwargs (Any, optional): additional keyword arguments to pass to the Task constructor
+    """
+
+    @staticmethod
+    def _get_vault_client() -> hvac.Client:
+        """
+        Convert the current container's service account JWT token into a Vault
+        token and use that to construct a Vault client.
+        """
+        with open(SERVICE_ACCOUNT_JWT_TOKEN_PATH) as sa_token_file:
+            service_account_token = sa_token_file.read()
+        client = hvac.Client(url=VAULT_BASE_URL)
+        client.auth_kubernetes(role=VAULT_ROLE, jwt=service_account_token)
+        return client
+
+    def run(self):
+        self.vault_client = self._get_vault_client()
+        return self._get_secret()
+
+    def _get_secret(self):
+        """
+        Override this in extending classes to fetch the secret using
+        `self.vault_client`.
+        """
+        pass
+
+
+class VaultKVSecret(VaultSecretBase):
+    """
+    A `Secret` prefect task for fetching KV secrets from Vault. Note that this
+    only supports version 2 of the KV engine.
+
+    Manage KV secrets at https://vault.analytics.edx.org/ui/vault/secrets/kv/list
+
+    Args:
+        path (str): The path of the KV secret, e.g. "snowflake_pipeline_etl_loader".
+        version (int): The version number of the KV secret.
+        **kwargs (Any, optional): Additional keyword arguments to pass to the Task constructor.
+    """
+
+    def __init__(self, path: str, version: int, **kwargs):
+        self.kv_path = path
+        self.kv_version = version
+        super().__init__(**kwargs)
+
+    def _get_secret(self):
+        """
+        Fetch the KV secret specified by path and version.
+
+        Returns:
+            dict containing the key/value pairs, where the values are secrets.
+        """
+        secret_version_response = self.vault_client.secrets.kv.v2.read_secret_version(
+            mount_point="kv", path=self.kv_path, version=self.kv_version,
+        )
+        return secret_version_response["data"]["data"]
