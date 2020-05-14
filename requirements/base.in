@@ -1,0 +1,8 @@
+azure-storage-blob==2.1.0  # 12.x seems to be breaking the snowflake connector package.
+boto3<1.10.0
+botocore<1.13.0
+hvac
+git+https://github.com/PrefectHQ/prefect.git@master#egg=prefect[aws,google,snowflake,viz]
+snowflake-connector-python
+google-cloud-bigquery
+google-cloud-storage

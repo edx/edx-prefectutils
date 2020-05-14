@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc clean-build docs help upgrade
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -72,6 +72,15 @@ docs: ## generate Sphinx HTML documentation, including API docs
 
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+
+upgrade: export CUSTOM_COMPILE_COMMAND=make upgrade
+upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
+	pip install -qr requirements/pip-tools.txt
+	# Make sure to compile files after any other files they include!
+	pip-compile --rebuild --upgrade -o requirements/pip-tools.txt requirements/pip-tools.in
+	pip-compile --rebuild --upgrade -o requirements/base.txt requirements/base.in
+	pip-compile --rebuild --upgrade -o requirements/test.txt requirements/test.in
+	pip-compile --rebuild --upgrade -o requirements/travis.txt requirements/travis.in
 
 release: dist ## package and upload a release
 	twine upload dist/*
