@@ -11,10 +11,17 @@ import snowflake.connector
 
 
 def create_snowflake_connection(
-    credentials: dict, role: str, autocommit=False
+    credentials: dict,
+    role: str,
+    autocommit=False
 ) -> snowflake.connector.SnowflakeConnection:
     """
-    Connects to the snowflake database.
+    Connects to the Snowflake database.
+
+      credentials (dict):
+        Snowflake credentials including key & passphrase, along with user and account.
+      role (str): Name of the role to use for the connection.
+      autocommit (bool): True to enable autocommit for the connection, False if not.
     """
     private_key = credentials.get("private_key")
 
