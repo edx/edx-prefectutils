@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-"""Tests for `prefect_utils` package."""
+"""
+Tests for cli utils for the `prefect_utils` package.
+"""
 
 import pytest
-
 from click.testing import CliRunner
-
-from prefect_utils import prefect_utils
 from prefect_utils import cli
 
 

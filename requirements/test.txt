@@ -53,6 +53,7 @@ markupsafe==1.1.1         # via jinja2
 marshmallow-oneofschema==2.0.1  # via -r requirements/base.txt, prefect
 marshmallow==3.6.0        # via -r requirements/base.txt, marshmallow-oneofschema, prefect
 mccabe==0.6.1             # via flake8
+mock==4.0.2               # via -r requirements/test.in
 more-itertools==8.2.0     # via pytest
 msgpack==1.0.0            # via -r requirements/base.txt, distributed
 mypy-extensions==0.4.3    # via -r requirements/base.txt, prefect
@@ -63,7 +64,7 @@ pathtools==0.1.2          # via watchdog
 pendulum==2.1.0           # via -r requirements/base.txt, prefect
 pkginfo==1.5.0.1          # via twine
 pluggy==0.13.1            # via pytest
-git+https://github.com/PrefectHQ/prefect.git@master#egg=prefect[aws,google,snowflake,viz]  # via -r requirements/base.txt
+prefect[aws,google,snowflake,viz]==0.11.0  # via -r requirements/base.txt
 protobuf==3.11.3          # via -r requirements/base.txt, google-api-core, google-cloud-bigquery, googleapis-common-protos
 psutil==5.7.0             # via -r requirements/base.txt, distributed
 py==1.8.1                 # via pytest
@@ -77,8 +78,9 @@ pygments==2.6.1           # via readme-renderer, sphinx
 pyjwt==1.7.1              # via -r requirements/base.txt, snowflake-connector-python
 pyopenssl==19.1.0         # via -r requirements/base.txt, snowflake-connector-python
 pyparsing==2.4.7          # via packaging
+pytest-mock==3.1.0        # via -r requirements/test.in
 pytest-runner==5.1        # via -r requirements/test.in
-pytest==4.6.5             # via -r requirements/test.in
+pytest==4.6.5             # via -r requirements/test.in, pytest-mock
 python-box==4.2.3         # via -r requirements/base.txt, prefect
 python-dateutil==2.8.1    # via -r requirements/base.txt, azure-storage-common, botocore, croniter, pendulum, prefect
 python-slugify==4.0.0     # via -r requirements/base.txt, prefect
