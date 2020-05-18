@@ -2,8 +2,10 @@
 Utility methods and tasks for working with BigQuery/Google Cloud Storage from a Prefect flow.
 """
 
+import os
+from google.cloud import bigquery
 from prefect import task
-from prefect.utilities.gcp import get_storage_client
+from prefect.utilities.gcp import get_bigquery_client, get_storage_client
 from urllib.parse import urlparse
 
 
@@ -23,3 +25,27 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
     prefix = parsed_url.path.lstrip("/")
     blobs = bucket.list_blobs(prefix=prefix)
     bucket.delete_blobs(blobs)
+
+
+@task
+def extract_ga_table(project, gcp_credentials, dataset, date, output_root):
+    """
+    Runs a BigQuery extraction job, extracting the google analytics' `ga_sessions` table for a
+    given date to a location in GCS in gzipped compressed JSON format.
+    """
+    table_name = "ga_sessions_{}".format(date)
+    dest_filename = "{}_*.json.gz".format(table_name)
+    base_extraction_path = os.path.join(output_root, dataset, date)
+    destination_uri = os.path.join(base_extraction_path, dest_filename)
+
+    client = get_bigquery_client(credentials=gcp_credentials, project=project)
+
+    dataset = client.dataset(dataset, project=project)
+    table = dataset.table(table_name)
+    job_config = bigquery.job.ExtractJobConfig()
+    job_config.destination_format = bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+    job_config.compression = "GZIP"
+    extract_job = client.extract_table(table, destination_uri, job_config=job_config)
+    extract_job.result()
+
+    return base_extraction_path
