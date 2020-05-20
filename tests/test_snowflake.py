@@ -5,7 +5,7 @@ Tests for Snowflake utils in the `prefect_utils` package.
 """
 
 import mock
-from pytest_mock import mocker
+from pytest_mock import mocker  # noqa: F401
 from prefect_utils import snowflake
 
 
@@ -21,7 +21,7 @@ def test_qualified_stage_name():
     )
 
 
-def test_create_snowflake_connection(mocker):
+def test_create_snowflake_connection(mocker):  # noqa: F811
     # Mock the Snowflake connection and cursor.
     mocker.patch.object(snowflake.snowflake.connector, 'connect')
     mock_cursor = mocker.Mock()
@@ -57,5 +57,5 @@ def test_create_snowflake_connection(mocker):
     )
 
 
-def test_load_json_objects_to_snowflake(mocker):
+def test_load_json_objects_to_snowflake(mocker):  # noqa: F811
     pass
