@@ -1,13 +1,11 @@
 """
 Utility methods and tasks for working with Snowflake from a Prefect flow.
 """
-
+import backoff
+import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
-from snowflake.connector import ProgrammingError
-
-import snowflake.connector
 
 
 def create_snowflake_connection(
@@ -72,7 +70,10 @@ def qualified_stage_name(database, schema, table) -> str:
 
 
 @task
-def load_json_objects_to_snowflake(
+@backoff.on_exception(backoff.expo,
+                      snowflake.connector.ProgrammingError,
+                      max_tries=3)
+def load_ga_data_to_snowflake(
     sf_credentials: dict,
     sf_database: str,
     sf_schema: str,
@@ -80,6 +81,7 @@ def load_json_objects_to_snowflake(
     sf_role: str,
     sf_warehouse: str,
     sf_storage_integration: str,
+    bq_dataset: str,
     gcs_url: str,
     date: str,
     pattern: str = ".*",
@@ -87,7 +89,6 @@ def load_json_objects_to_snowflake(
 ):
     """
     Loads JSON objects from GCS to Snowflake.
-
     Args:
       sf_credentials (dict):
         Snowflake public key credentials in the format required by create_snowflake_connection.
@@ -98,6 +99,7 @@ def load_json_objects_to_snowflake(
       sf_warehouse (str): Name of the Snowflake warehouse to be used for loading.
       sf_storage_integration (str):
         The name of the pre-configured storage integration created for this flow.
+      bq_dataset (str): BQ Dataset to which this load belongs to. This gets set as `ga_view_id' in the dest. table.
       gcs_url (str): Full URL to the GCS path containing the files to load.
       pattern (str, optional): Path pattern/regex to match GCS object to copy.
       date (str): Date of `ga_sessions` being loaded.
@@ -111,14 +113,17 @@ def load_json_objects_to_snowflake(
     try:
         query = """
         SELECT 1 FROM {table}
-        WHERE src:date={date}
+        WHERE session:date='{date}'
+            AND ga_view_id='{ga_view_id}'
         """.format(
-            table=qualified_table_name(sf_database, sf_schema, sf_table), date=date,
+            table=qualified_table_name(sf_database, sf_schema, sf_table),
+            date=date,
+            ga_view_id=bq_dataset,
         )
         cursor = sf_connection.cursor()
         cursor.execute(query)
         row = cursor.fetchone()
-    except ProgrammingError as e:
+    except snowflake.connector.ProgrammingError as e:
         if "does not exist" in e.msg:
             # If so then the query failed because the table doesn't exist.
             row = None
@@ -131,7 +136,10 @@ def load_json_objects_to_snowflake(
     try:
         query = """
         CREATE TABLE IF NOT EXISTS {table} (
-            src VARIANT
+            id number autoincrement start 1 increment 1,
+            load_time timestamp_ltz default current_timestamp(),
+            ga_view_id string,
+            session VARIANT
         );
         """.format(
             table=qualified_table_name(sf_database, sf_schema, sf_table)
@@ -141,9 +149,12 @@ def load_json_objects_to_snowflake(
         if overwrite:
             query = """
             DELETE FROM {table}
-            WHERE src:date={date}
+            WHERE session:date='{date}'
+                AND ga_view_id='{ga_view_id}'
             """.format(
-                table=qualified_table_name(sf_database, sf_schema, sf_table), date=date,
+                table=qualified_table_name(sf_database, sf_schema, sf_table),
+                date=date,
+                ga_view_id=bq_dataset,
             )
             sf_connection.cursor().execute(query)
 
@@ -160,12 +171,18 @@ def load_json_objects_to_snowflake(
         sf_connection.cursor().execute(query)
 
         query = """
-        COPY INTO {table}
-        FROM @{stage_name}
+        COPY INTO {table} (ga_view_id, session)
+            FROM (
+                SELECT
+                    '{ga_view_id}',
+                    t.$1
+                FROM @{stage_name} t
+            )
         PATTERN='{pattern}'
         FORCE={force}
         """.format(
             table=qualified_table_name(sf_database, sf_schema, sf_table),
+            ga_view_id=bq_dataset,
             stage_name=qualified_stage_name(sf_database, sf_schema, sf_table),
             pattern=pattern,
             force=str(overwrite),

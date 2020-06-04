@@ -3,10 +3,11 @@ Utility methods and tasks for working with BigQuery/Google Cloud Storage from a 
 """
 
 import os
+from urllib.parse import urlparse
+
 from google.cloud import bigquery
 from prefect import task
 from prefect.utilities.gcp import get_bigquery_client, get_storage_client
-from urllib.parse import urlparse
 
 
 @task
@@ -25,10 +26,11 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
     prefix = parsed_url.path.lstrip("/")
     blobs = bucket.list_blobs(prefix=prefix)
     bucket.delete_blobs(blobs)
+    return blobs
 
 
 @task
-def extract_ga_table(project, gcp_credentials, dataset, date, output_root):
+def extract_ga_table(project: str, gcp_credentials: dict, dataset: str, date: str, output_root: str):
     """
     Runs a BigQuery extraction job, extracting the google analytics' `ga_sessions` table for a
     given date to a location in GCS in gzipped compressed JSON format.

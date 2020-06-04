@@ -27,8 +27,8 @@ secret in Prefect flows:
         )
         load_data_into_snowflake(sf_credentials)
 """
-from prefect.tasks.secrets import SecretBase
 import hvac
+from prefect.tasks.secrets import SecretBase
 
 # This is a standardized k8s path to always find the service account JWT token.
 SERVICE_ACCOUNT_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"

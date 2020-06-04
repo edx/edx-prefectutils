@@ -6,6 +6,7 @@ Tests for cli utils for the `prefect_utils` package.
 
 import pytest
 from click.testing import CliRunner
+
 from prefect_utils import cli
 
 

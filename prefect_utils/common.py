@@ -1,8 +1,10 @@
 """
-Utility methods and tasks for working with dates and times from a Prefect flow.
+Utility methods and tasks for use from a Prefect flow.
 """
 
 import datetime
+import itertools
+
 from prefect import task
 
 
@@ -19,3 +21,22 @@ def generate_dates(start_date: str, end_date: str):
         parsed_start_date = parsed_start_date + datetime.timedelta(days=1)
 
     return [date.strftime("%Y%m%d") for date in dates]
+
+
+@task
+def get_unzipped_cartesian_product(input_lists: list):
+    """
+    Generate an unzipped cartesian product of the given list of lists, useful for
+    generating task parameters for mapping.
+
+    For example, get_unzipped_cartesian_product([[1, 2, 3], ["a", "b", "c"]]) would return:
+
+    [
+      [1, 1, 1, 2, 2, 3, 3, 3],
+      ["a", "b", "c", "a", "b", "c", "a", "b", "c"]
+    ]
+
+    Args:
+      input_lists (list): A list of two or more lists.
+    """
+    return list(zip(*itertools.product(*input_lists)))
