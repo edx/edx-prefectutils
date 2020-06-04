@@ -4,8 +4,9 @@
 Tests for Hashicorp Vault secrets utils in the `prefect_utils` package.
 """
 
-from pytest_mock import mocker  # noqa: F401
 from prefect import Flow, task, unmapped
+from pytest_mock import mocker  # noqa: F401
+
 from prefect_utils import vault_secrets
 
 

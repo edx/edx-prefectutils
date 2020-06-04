@@ -2,6 +2,7 @@
 Console script for prefect_utils.
 """
 import sys
+
 import click
 
 

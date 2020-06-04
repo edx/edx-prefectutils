@@ -3,10 +3,11 @@ Utility methods and tasks for working with BigQuery/Google Cloud Storage from a 
 """
 
 import os
+from urllib.parse import urlparse
+
 from google.cloud import bigquery
 from prefect import task
 from prefect.utilities.gcp import get_bigquery_client, get_storage_client
-from urllib.parse import urlparse
 
 
 @task

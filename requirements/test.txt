@@ -10,7 +10,7 @@ asn1crypto==1.3.0         # via -r requirements/base.txt, oscrypto, snowflake-co
 atomicwrites==1.4.0       # via pytest
 attrs==19.3.0             # via pytest
 azure-common==1.1.25      # via -r requirements/base.txt, snowflake-connector-python
-azure-core==1.5.0         # via -r requirements/base.txt, azure-storage-blob
+azure-core==1.6.0         # via -r requirements/base.txt, azure-storage-blob
 azure-storage-blob==12.3.1  # via -r requirements/base.txt, snowflake-connector-python
 babel==2.8.0              # via sphinx
 backoff==1.10.0           # via -r requirements/base.txt
@@ -24,7 +24,6 @@ cffi==1.13.2              # via -r requirements/base.txt, cryptography, snowflak
 chardet==3.0.4            # via -r requirements/base.txt, requests
 click==7.1.2              # via -r requirements/base.txt, distributed, prefect
 cloudpickle==1.4.1        # via -r requirements/base.txt, dask, distributed, prefect
-contextvars==2.4          # via -r requirements/base.txt, distributed
 croniter==0.3.32          # via -r requirements/base.txt, prefect
 cryptography==2.9.2       # via -r requirements/base.txt, azure-storage-blob, pyopenssl, snowflake-connector-python
 dask[bag]==2.17.2         # via -r requirements/base.txt, distributed, prefect
@@ -34,22 +33,22 @@ docutils==0.15.2          # via -r requirements/base.txt, botocore, readme-rende
 entrypoints==0.3          # via flake8
 flake8==3.7.8             # via -r requirements/test.in
 fsspec==0.7.4             # via -r requirements/base.txt, dask
-google-api-core==1.17.0   # via -r requirements/base.txt, google-cloud-bigquery, google-cloud-core
-google-auth==1.16.0       # via -r requirements/base.txt, google-api-core, google-cloud-bigquery, google-cloud-storage
+google-api-core==1.18.0   # via -r requirements/base.txt, google-cloud-bigquery, google-cloud-core
+google-auth==1.16.1       # via -r requirements/base.txt, google-api-core, google-cloud-bigquery, google-cloud-storage
 google-cloud-bigquery==1.24.0  # via -r requirements/base.txt, prefect
 google-cloud-core==1.3.0  # via -r requirements/base.txt, google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.28.1  # via -r requirements/base.txt, prefect
 google-resumable-media==0.5.1  # via -r requirements/base.txt, google-cloud-bigquery, google-cloud-storage
-googleapis-common-protos==1.51.0  # via -r requirements/base.txt, google-api-core
+googleapis-common-protos==1.52.0  # via -r requirements/base.txt, google-api-core
 graphviz==0.14            # via -r requirements/base.txt, prefect
 heapdict==1.0.1           # via -r requirements/base.txt, zict
 hvac==0.10.3              # via -r requirements/base.txt
 idna==2.9                 # via -r requirements/base.txt, requests, snowflake-connector-python
 ijson==2.6.1              # via -r requirements/base.txt, snowflake-connector-python
 imagesize==1.2.0          # via sphinx
-immutables==0.14          # via -r requirements/base.txt, contextvars
 importlib-metadata==1.6.0  # via pluggy, pytest
 isodate==0.6.0            # via -r requirements/base.txt, msrest
+isort==4.3.21             # via -r requirements/test.in
 jinja2==2.11.2            # via sphinx
 jmespath==0.10.0          # via -r requirements/base.txt, boto3, botocore
 locket==0.2.0             # via -r requirements/base.txt, partd
@@ -60,7 +59,7 @@ mccabe==0.6.1             # via flake8
 mock==4.0.2               # via -r requirements/test.in
 more-itertools==8.3.0     # via pytest
 msgpack==1.0.0            # via -r requirements/base.txt, distributed
-msrest==0.6.14            # via -r requirements/base.txt, azure-storage-blob
+msrest==0.6.15            # via -r requirements/base.txt, azure-storage-blob
 mypy-extensions==0.4.3    # via -r requirements/base.txt, prefect
 natsort==7.0.1            # via -r requirements/base.txt, croniter
 oauthlib==3.1.0           # via -r requirements/base.txt, requests-oauthlib
@@ -85,7 +84,7 @@ pygments==2.6.1           # via readme-renderer, sphinx
 pyjwt==1.7.1              # via -r requirements/base.txt, snowflake-connector-python
 pyopenssl==19.1.0         # via -r requirements/base.txt, snowflake-connector-python
 pyparsing==2.4.7          # via packaging
-pytest-mock==3.1.0        # via -r requirements/test.in
+pytest-mock==3.1.1        # via -r requirements/test.in
 pytest-runner==5.1        # via -r requirements/test.in
 pytest==4.6.5             # via -r requirements/test.in, pytest-mock
 python-box==4.2.3         # via -r requirements/base.txt, prefect

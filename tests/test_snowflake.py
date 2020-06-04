@@ -6,11 +6,12 @@ Tests for Snowflake utils in the `prefect_utils` package.
 
 import mock
 import pytest
-from pytest_mock import mocker  # noqa: F401
 from prefect.core import Flow
 from prefect.utilities.debug import raise_on_exception
-from prefect_utils import snowflake
+from pytest_mock import mocker  # noqa: F401
 from snowflake.connector import ProgrammingError
+
+from prefect_utils import snowflake
 
 
 def test_qualified_table_name():

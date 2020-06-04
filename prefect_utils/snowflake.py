@@ -2,12 +2,10 @@
 Utility methods and tasks for working with Snowflake from a Prefect flow.
 """
 import backoff
-
+import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
-
-import snowflake.connector
 
 
 def create_snowflake_connection(

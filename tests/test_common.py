@@ -5,6 +5,7 @@ Tests for BigQuery utils in the `prefect_utils` package.
 """
 
 from prefect.core import Flow
+
 from prefect_utils import common
 
 
