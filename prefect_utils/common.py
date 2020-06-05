@@ -5,6 +5,7 @@ Utility methods and tasks for use from a Prefect flow.
 import datetime
 import itertools
 
+import prefect
 from prefect import task
 
 
@@ -13,6 +14,11 @@ def generate_dates(start_date: str, end_date: str):
     """
     Generates a list of date strings in the format `YYYYMMDD` from start_date up to but excluding end_date.
     """
+    if not start_date:
+        start_date = prefect.context.yesterday
+    if not end_date:
+        end_date = prefect.context.today
+
     parsed_start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     parsed_end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
     dates = []
