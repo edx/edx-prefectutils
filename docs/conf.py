@@ -42,8 +42,8 @@ templates_path = ['_templates']
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
 
-# The master toctree document.
-master_doc = 'index'
+# The top level toctree document.
+top_level_doc = 'index'
 
 # General information about the project.
 project = 'prefect-utils'
@@ -127,7 +127,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'prefect_utils.tex',
+    (top_level_doc, 'prefect_utils.tex',
      'prefect-utils Documentation',
      'Julia Eskew', 'manual'),
 ]
@@ -138,7 +138,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'prefect_utils',
+    (top_level_doc, 'prefect_utils',
      'prefect-utils Documentation',
      [author], 1)
 ]
@@ -150,7 +150,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'prefect_utils',
+    (top_level_doc, 'prefect_utils',
      'prefect-utils Documentation',
      author,
      'prefect_utils',
