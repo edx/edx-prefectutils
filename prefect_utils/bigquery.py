@@ -5,6 +5,8 @@ Utility methods and tasks for working with BigQuery/Google Cloud Storage from a 
 import os
 from urllib.parse import urlparse
 
+import backoff
+import google.api_core.exceptions
 from google.cloud import bigquery
 from prefect import task
 from prefect.utilities.gcp import get_bigquery_client, get_storage_client
@@ -30,6 +32,9 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
 
 
 @task
+@backoff.on_exception(backoff.expo,
+                      google.api_core.exceptions.NotFound,
+                      max_time=60*60*2)
 def extract_ga_table(project: str, gcp_credentials: dict, dataset: str, date: str, output_root: str):
     """
     Runs a BigQuery extraction job, extracting the google analytics' `ga_sessions` table for a
