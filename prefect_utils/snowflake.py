@@ -6,12 +6,14 @@ import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
+from prefect.engine import signals
 
 
 def create_snowflake_connection(
     credentials: dict,
     role: str,
-    autocommit=False
+    autocommit: bool = False,
+    warehouse: str = None
 ) -> snowflake.connector.SnowflakeConnection:
     """
     Connects to the Snowflake database.
@@ -20,6 +22,7 @@ def create_snowflake_connection(
         Snowflake credentials including key & passphrase, along with user and account.
       role (str): Name of the role to use for the connection.
       autocommit (bool): True to enable autocommit for the connection, False if not.
+      warehouse (str): The Snowflake warehouse to use for this connection. Defaults to the user's default warehouse.
     """
     private_key = credentials.get("private_key")
 
@@ -40,7 +43,7 @@ def create_snowflake_connection(
     )
 
     connection = snowflake.connector.connect(
-        user=user, account=account, private_key=pkb, autocommit=autocommit
+        user=user, account=account, private_key=pkb, autocommit=autocommit, warehouse=warehouse
     )
 
     # Switch to specified role.
@@ -185,6 +188,171 @@ def load_ga_data_to_snowflake(
             ga_view_id=bq_dataset,
             stage_name=qualified_stage_name(sf_database, sf_schema, sf_table),
             pattern=pattern,
+            force=str(overwrite),
+        )
+        sf_connection.cursor().execute(query)
+        sf_connection.commit()
+    except Exception:
+        sf_connection.rollback()
+        raise
+    finally:
+        sf_connection.close()
+
+
+@task
+def load_s3_data_to_snowflake(
+    date: str,
+    date_property: str,
+    sf_credentials: dict,
+    sf_database: str,
+    sf_schema: str,
+    sf_table: str,
+    sf_role: str,
+    sf_warehouse: str,
+    sf_storage_integration_name: str,
+    s3_url: str,
+    sf_file_format: str = "TYPE='JSON', STRIP_OUTER_ARRAY=TRUE",
+    file: str = None,
+    pattern: str = None,
+    overwrite: bool = False,
+):
+    """
+    Loads objects in S3 to a generic table in Snowflake, the data is stored in a variant column named
+    `PROPERTIES`. Note that either `file` or `pattern` parameter must be specified.
+    Notes:
+      To load a single file, use the `file` parameter.
+      You must explicitly include a separator (/) either at the end of the `s3_url` or at the beginning
+      of file path specified in the `file` parameter. Typically you would include a trailing (/)
+      in `s3_url`.
+      To load multiple files, use `pattern`.
+    Examples:
+      To load a single file `s3://bucket/path/to/filename/filename.ext`:
+      load_s3_data_to_snowflake(s3_url='s3://bucket/path/to/filename/, file='filename.ext')
+      or
+      load_s3_data_to_snowflake(s3_url='s3://bucket/path/, file='to/filename/filename.ext')
+
+      Load all files under `s3://bucket/path/` with a certain name:
+      load_s3_data_to_snowflake(s3_url='s3://bucket/path/, pattern='.*filename.ext')
+
+    Args:
+      date (str): Date of the data being loaded.
+      date_property (str): Date type property name in the variant `PROPERTIES` column.
+      sf_credentials (dict): Snowflake public key credentials in the format required by create_snowflake_connection.
+      sf_database (str): Name of the destination database.
+      sf_schema (str): Name of the destination schema.
+      sf_table (str): Name of the destination table.
+      sf_role (str): Name of the snowflake role to assume.
+      sf_warehouse (str): Name of the Snowflake warehouse to be used for loading.
+      sf_storage_integration_name (str): Name of the Snowflake storage integration to use. These are
+              configured in Terraform.
+      s3_url (str): Full URL to the S3 path containing the files to load.
+      sf_file_format (str, optional): Snowflake file format for the Stage. Defaults to 'JSON'.
+      file (str, optional): File path relative to `s3_url`.
+      pattern (str, optional): Path pattern/regex to match S3 objects to copy. Defaults to `None`.
+      overwrite (bool, optional): Whether to overwrite existing data for the given date. Defaults to `False`.
+    """
+
+    if not file and not pattern:
+        raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
+
+    sf_connection = create_snowflake_connection(sf_credentials, sf_role, warehouse=sf_warehouse)
+
+    # Check for data existence for this date
+    try:
+        query = """
+        SELECT 1 FROM {table}
+        WHERE date(PROPERTIES:{date_property})='{date}'
+        """.format(
+            table=qualified_table_name(sf_database, sf_schema, sf_table),
+            date=date,
+            date_property=date_property,
+        )
+        cursor = sf_connection.cursor()
+        cursor.execute(query)
+        row = cursor.fetchone()
+    except snowflake.connector.ProgrammingError as e:
+        if "does not exist" in e.msg:
+            # If so then the query failed because the table doesn't exist.
+            row = None
+        else:
+            raise
+
+    if row and not overwrite:
+        raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')
+
+    try:
+        # Create the generic loading table
+        query = """
+        CREATE TABLE IF NOT EXISTS {table} (
+            ID NUMBER AUTOINCREMENT START 1 INCREMENT 1,
+            LOAD_TIME TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP(),
+            ORIGIN_FILE_NAME VARCHAR(16777216),
+            ORIGIN_FILE_LINE NUMBER(38,0),
+            ORIGIN_STR VARCHAR(16777216),
+            PROPERTIES VARIANT
+        );
+        """.format(
+            table=qualified_table_name(sf_database, sf_schema, sf_table)
+        )
+
+        sf_connection.cursor().execute(query)
+
+        # Delete existing data in case of overwrite.
+        if overwrite and row:
+            query = """
+            DELETE FROM {table}
+            WHERE date(PROPERTIES:{date_property})='{date}'
+            """.format(
+                table=qualified_table_name(sf_database, sf_schema, sf_table),
+                date=date,
+                date_property=date_property,
+            )
+            sf_connection.cursor().execute(query)
+
+        # Create stage
+        query = """
+        CREATE STAGE IF NOT EXISTS {stage_name}
+            URL = '{stage_url}'
+            STORAGE_INTEGRATION = {storage_integration}
+            FILE_FORMAT = ({file_format});
+        """.format(
+            stage_name=qualified_stage_name(sf_database, sf_schema, sf_table),
+            stage_url=s3_url,
+            storage_integration=sf_storage_integration_name,
+            file_format=sf_file_format,
+        )
+        sf_connection.cursor().execute(query)
+
+        files_paramater = ""
+        pattern_parameter = ""
+
+        if file:
+            files_paramater = "FILES = ( '{}' )".format(file)
+
+        if pattern:
+            pattern_parameter = "PATTERN = '{}'".format(pattern)
+
+        query = """
+        COPY INTO {table} (origin_file_name, origin_file_line, origin_str, properties)
+            FROM (
+                SELECT
+                    metadata$filename,
+                    metadata$file_row_number,
+                    t.$1,
+                    CASE
+                        WHEN CHECK_JSON(t.$1) IS NULL THEN t.$1
+                        ELSE NULL
+                    END
+                FROM @{stage_name} t
+            )
+        {files_parameter}
+        {pattern_parameter}
+        FORCE={force}
+        """.format(
+            table=qualified_table_name(sf_database, sf_schema, sf_table),
+            stage_name=qualified_stage_name(sf_database, sf_schema, sf_table),
+            files_parameter=files_paramater,
+            pattern_parameter=pattern_parameter,
             force=str(overwrite),
         )
         sf_connection.cursor().execute(query)

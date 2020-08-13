@@ -10,9 +10,10 @@ from prefect import task
 
 
 @task
-def generate_dates(start_date: str, end_date: str):
+def generate_dates(start_date: str, end_date: str, date_format: str = "%Y%m%d"):
     """
-    Generates a list of date strings in the format `YYYYMMDD` from start_date up to but excluding end_date.
+    Generates a list of date strings in the format specified by `date_format` from
+    start_date up to but excluding end_date.
     """
     if not start_date:
         start_date = prefect.context.yesterday
@@ -26,7 +27,7 @@ def generate_dates(start_date: str, end_date: str):
         dates.append(parsed_start_date)
         parsed_start_date = parsed_start_date + datetime.timedelta(days=1)
 
-    return [date.strftime("%Y%m%d") for date in dates]
+    return [date.strftime(date_format) for date in dates]
 
 
 @task
