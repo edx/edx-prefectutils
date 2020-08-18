@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
 from prefect.engine import signals
+from prefect.utilities.logging import get_logger
 
 
 def create_snowflake_connection(
@@ -251,7 +252,7 @@ def load_s3_data_to_snowflake(
       pattern (str, optional): Path pattern/regex to match S3 objects to copy. Defaults to `None`.
       overwrite (bool, optional): Whether to overwrite existing data for the given date. Defaults to `False`.
     """
-
+    logger = get_logger()
     if not file and not pattern:
         raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
 
@@ -261,12 +262,15 @@ def load_s3_data_to_snowflake(
     try:
         query = """
         SELECT 1 FROM {table}
-        WHERE date(PROPERTIES:{date_property})='{date}'
+        WHERE date(PROPERTIES:{date_property})=date('{date}')
         """.format(
             table=qualified_table_name(sf_database, sf_schema, sf_table),
             date=date,
             date_property=date_property,
         )
+
+        logger.info("Checking existence of data for {}".format(date))
+
         cursor = sf_connection.cursor()
         cursor.execute(query)
         row = cursor.fetchone()
@@ -279,6 +283,8 @@ def load_s3_data_to_snowflake(
 
     if row and not overwrite:
         raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')
+    else:
+        logger.info("Continuing with S3 load for {}".format(date))
 
     try:
         # Create the generic loading table
@@ -299,9 +305,11 @@ def load_s3_data_to_snowflake(
 
         # Delete existing data in case of overwrite.
         if overwrite and row:
+            logger.info("Deleting data for overwrite for {}".format(date))
+
             query = """
             DELETE FROM {table}
-            WHERE date(PROPERTIES:{date_property})='{date}'
+            WHERE date(PROPERTIES:{date_property})=date('{date}')
             """.format(
                 table=qualified_table_name(sf_database, sf_schema, sf_table),
                 date=date,
@@ -327,9 +335,11 @@ def load_s3_data_to_snowflake(
         pattern_parameter = ""
 
         if file:
+            logger.info("Loading file {}".format(file))
             files_paramater = "FILES = ( '{}' )".format(file)
 
         if pattern:
+            logger.info("Loading pattern {}".format(pattern))
             pattern_parameter = "PATTERN = '{}'".format(pattern)
 
         query = """
@@ -355,6 +365,9 @@ def load_s3_data_to_snowflake(
             pattern_parameter=pattern_parameter,
             force=str(overwrite),
         )
+
+        logger.info("Copying data into Snowflake as: \n{}".format(query))
+
         sf_connection.cursor().execute(query)
         sf_connection.commit()
     except Exception:

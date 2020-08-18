@@ -7,9 +7,10 @@ import itertools
 
 import prefect
 from prefect import task
+from prefect.engine.results import PrefectResult
 
 
-@task
+@task(result=PrefectResult())
 def generate_dates(start_date: str, end_date: str, date_format: str = "%Y%m%d"):
     """
     Generates a list of date strings in the format specified by `date_format` from

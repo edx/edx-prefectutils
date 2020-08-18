@@ -39,6 +39,9 @@ VAULT_BASE_URL = "http://analytics-vault.vault:8200"
 VAULT_LOGIN_URL = VAULT_BASE_URL + "/v1/auth/kubernetes/login"
 VAULT_ROLE = "prefect"
 
+# Global configuration for accessing vault from Prefect flows _outside_ of K8s.
+EXTERNAL_VAULT_BASE_URL = "https://vault.analytics.edx.org"
+
 
 class VaultSecretBase(SecretBase):
     """
@@ -53,7 +56,7 @@ class VaultSecretBase(SecretBase):
     """
 
     @staticmethod
-    def _get_vault_client() -> hvac.Client:
+    def _get_k8s_vault_client() -> hvac.Client:
         """
         Convert the current container's service account JWT token into a Vault
         token and use that to construct a Vault client.
@@ -64,8 +67,28 @@ class VaultSecretBase(SecretBase):
         client.auth_kubernetes(role=VAULT_ROLE, jwt=service_account_token)
         return client
 
+    @staticmethod
+    def _get_env_var_vault_client() -> hvac.Client:
+        """
+        For local development, if the user is logged into Vault we can use
+        their existing environment vars.
+        """
+        client = hvac.Client(url=EXTERNAL_VAULT_BASE_URL)
+        return client
+
     def run(self):
-        self.vault_client = self._get_vault_client()
+        # First try k8s auth, if we can't find the magic file then try local env var authentication.
+        try:
+            self.vault_client = self._get_k8s_vault_client()
+        except FileNotFoundError:
+            # If that fails try local token auth
+            self.vault_client = self._get_env_var_vault_client()
+
+        if not self.vault_client.is_authenticated():
+            raise Exception("Vault Client error. We don't seem to be in K8s and no Vault token found. "
+                            "Try 'vault login -address https://vault.analytics.edx.org -method oidc' "
+                            "if you've downloaded Vault.")
+
         return self._get_secret()
 
     def _get_secret(self):
