@@ -7,6 +7,7 @@ Tests for Snowflake utils in the `prefect_utils` package.
 import mock
 import pytest
 from prefect.core import Flow
+from prefect.engine import signals
 from prefect.utilities.debug import raise_on_exception
 from pytest_mock import mocker  # noqa: F401
 from snowflake.connector import ProgrammingError
@@ -208,3 +209,73 @@ def test_load_json_objects_to_snowflake_table_general_exception(mock_sf_connecti
     with raise_on_exception():
         with pytest.raises(Exception):
             f.run()
+
+
+def test_load_s3_data_to_snowflake_missing_parameters():
+    task = snowflake.load_s3_data_to_snowflake
+    with pytest.raises(signals.FAIL, match="Either `file` or `pattern` must be specified to run this task."):
+        task.run(
+            date="2020-01-01",
+            date_property='date',
+            sf_credentials={},
+            sf_database="test_database",
+            sf_schema="test_schema",
+            sf_table="test_table",
+            sf_role="test_role",
+            sf_warehouse="test_warehouse",
+            sf_storage_integration_name="test_storage_integration",
+            s3_url="s3://edx-test/test/",
+        )
+
+
+def test_load_s3_data_to_snowflake_no_existing_table(mock_sf_connection):
+    # Mock the Snowflake connection, cursor, and fetchone method.
+    mock_cursor = mock_sf_connection.cursor()
+    mock_fetchone = mock.Mock(side_effect=ProgrammingError("does not exist"))
+    mock_cursor.fetchone = mock_fetchone
+
+    task = snowflake.load_s3_data_to_snowflake
+    task.run(
+        date="2020-01-01",
+        date_property='date',
+        sf_credentials={},
+        sf_database="test_database",
+        sf_schema="test_schema",
+        sf_table="test_table",
+        sf_role="test_role",
+        sf_warehouse="test_warehouse",
+        sf_storage_integration_name="test_storage_integration",
+        s3_url="s3://edx-test/test/",
+        file="test_file.csv",
+        pattern=".*",
+    )
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock.call("\n        SELECT 1 FROM test_database.test_schema.test_table\n        WHERE date(PROPERTIES:date)='2020-01-01'\n        "), # noqa
+            mock.call('\n        CREATE TABLE IF NOT EXISTS test_database.test_schema.test_table (\n            ID NUMBER AUTOINCREMENT START 1 INCREMENT 1,\n            LOAD_TIME TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP(),\n            ORIGIN_FILE_NAME VARCHAR(16777216),\n            ORIGIN_FILE_LINE NUMBER(38,0),\n            ORIGIN_STR VARCHAR(16777216),\n            PROPERTIES VARIANT\n        );\n        '), # noqa
+            mock.call("\n        CREATE STAGE IF NOT EXISTS test_database.test_schema.test_table_stage\n            URL = 's3://edx-test/test/'\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = (TYPE='JSON', STRIP_OUTER_ARRAY=TRUE);\n        "), # noqa
+            mock.call("\n        COPY INTO test_database.test_schema.test_table (origin_file_name, origin_file_line, origin_str, properties)\n            FROM (\n                SELECT\n                    metadata$filename,\n                    metadata$file_row_number,\n                    t.$1,\n                    CASE\n                        WHEN CHECK_JSON(t.$1) IS NULL THEN t.$1\n                        ELSE NULL\n                    END\n                FROM @test_database.test_schema.test_table_stage t\n            )\n        FILES = ( 'test_file.csv' )\n        PATTERN = '.*'\n        FORCE=False\n        "), # noqa
+        ]
+    )
+
+
+def test_load_s3_data_to_snowflake_data_exists_no_overwrite(mock_sf_connection):
+    mock_cursor = mock_sf_connection.cursor()
+    mock_fetchone = mock.Mock()
+    mock_cursor.fetchone = mock_fetchone
+
+    task = snowflake.load_s3_data_to_snowflake
+    with pytest.raises(signals.SKIP, match="Skipping task as data for the date exists and no overwrite was provided."):
+        task.run(
+            date="2020-01-01",
+            date_property='date',
+            sf_credentials={},
+            sf_database="test_database",
+            sf_schema="test_schema",
+            sf_table="test_table",
+            sf_role="test_role",
+            sf_warehouse="test_warehouse",
+            sf_storage_integration_name="test_storage_integration",
+            s3_url="s3://edx-test/test/",
+            pattern=".*",
+        )
