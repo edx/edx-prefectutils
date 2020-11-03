@@ -4,6 +4,7 @@ S3 related common methods and tasks for Prefect
 
 import prefect
 from prefect import task
+from prefect.tasks.aws import s3
 from prefect.utilities.aws import get_boto_client
 
 
@@ -41,3 +42,30 @@ def list_object_keys_from_s3(bucket: str = None, prefix: str = '', credentials: 
         ]
     else:
         return []
+
+
+def get_s3_path_for_date(date):
+    # The path and file name inside our given bucket and S3 prefix to write the file to
+    return '{date}/{date}.json'.format(date=date)
+
+
+@task
+def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str):
+    logger = prefect.context.get("logger")
+
+    date, report_str = download_results
+    date_path = get_s3_path_for_date(date)
+    s3_key = s3_path + date_path
+    logger.info("Writing report to S3 for {} to {}".format(date, s3_key))
+
+    s3.S3Upload(bucket=s3_bucket).run(
+        report_str,
+        key=s3_key
+    )
+
+    return date_path
+
+
+@task
+def get_s3_url(s3_bucket, s3_path):
+    return 's3://{bucket}/{path}'.format(bucket=s3_bucket, path=s3_path)
