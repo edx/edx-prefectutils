@@ -216,6 +216,7 @@ def load_s3_data_to_snowflake(
     file: str = None,
     pattern: str = None,
     overwrite: bool = False,
+    truncate: bool = False,
 ):
     """
     Loads objects in S3 to a generic table in Snowflake, the data is stored in a variant column named
@@ -251,12 +252,19 @@ def load_s3_data_to_snowflake(
       file (str, optional): File path relative to `s3_url`.
       pattern (str, optional): Path pattern/regex to match S3 objects to copy. Defaults to `None`.
       overwrite (bool, optional): Whether to overwrite existing data for the given date. Defaults to `False`.
+      truncate (bool, optional): Whether to truncate the table. Defaults to `False`.
     """
     logger = get_logger()
     if not file and not pattern:
         raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
 
     sf_connection = create_snowflake_connection(sf_credentials, sf_role, warehouse=sf_warehouse)
+
+    if truncate:
+        query = "TRUNCATE IF EXISTS {}".format(qualified_table_name(sf_database, sf_schema, sf_table))
+        logger.info("Truncating table: {}".format(sf_table))
+        cursor = sf_connection.cursor()
+        cursor.execute(query)
 
     # Check for data existence for this date
     try:
