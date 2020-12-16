@@ -134,6 +134,8 @@ msrest==0.6.21
     # via azure-storage-blob
 mypy-extensions==0.4.3
     # via prefect
+mysql-connector-python==8.0.22
+    # # via -r requirements/base.in
 natsort==7.1.1
     # via croniter
 oauthlib==3.1.0
@@ -152,6 +154,7 @@ protobuf==3.14.0
     # via
     #   google-api-core
     #   googleapis-common-protos
+    #   mysql-connector-python
 psutil==5.8.0
     # via distributed
 pyasn1-modules==0.2.8

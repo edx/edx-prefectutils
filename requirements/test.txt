@@ -230,6 +230,8 @@ mypy-extensions==0.4.3
     # via
     #   -r requirements/base.txt
     #   prefect
+mysql-connector-python==8.0.22
+    # via -r requirements/base.txt
 natsort==7.1.1
     # via
     #   -r requirements/base.txt
@@ -270,6 +272,7 @@ protobuf==3.14.0
     #   -r requirements/base.txt
     #   google-api-core
     #   googleapis-common-protos
+    #   mysql-connector-python
 psutil==5.8.0
     # via
     #   -r requirements/base.txt

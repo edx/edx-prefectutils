@@ -279,3 +279,72 @@ def test_load_s3_data_to_snowflake_data_exists_no_overwrite(mock_sf_connection):
             s3_url="s3://edx-test/test/",
             pattern=".*",
         )
+
+
+def test_export_snowflake_table_to_s3_with_exception(mock_sf_connection):
+    mock_cursor = mock_sf_connection.cursor()
+    mock_execute = mock.Mock(side_effect=ProgrammingError('Files already existing at the unload destination'))
+    mock_cursor.execute = mock_execute
+
+    task = snowflake.export_snowflake_table_to_s3
+    with pytest.raises(signals.FAIL, match="Files already exist. Use overwrite option to force unloading."):
+        task.run(
+            sf_credentials={},
+            sf_database="test_database",
+            sf_schema="test_schema",
+            sf_table="test_table",
+            sf_role="test_role",
+            sf_warehouse="test_warehouse",
+            sf_storage_integration="test_storage_integration",
+            s3_path="s3://edx-test/test/",
+        )
+
+
+def test_export_snowflake_table_to_s3_overwrite(mock_sf_connection):  # noqa: F811
+    mock_cursor = mock_sf_connection.cursor()
+
+    with Flow("test") as f:
+        snowflake.export_snowflake_table_to_s3(
+            sf_credentials={},
+            sf_database="test_database",
+            sf_schema="test_schema",
+            sf_table="test_table",
+            sf_role="test_role",
+            sf_warehouse="test_warehouse",
+            sf_storage_integration="test_storage_integration",
+            s3_path="s3://edx-test/test/",
+            overwrite=True,
+        )
+    state = f.run()
+    assert state.is_successful()
+
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=True\n    "),  # noqa
+        ]
+    )
+
+
+def test_export_snowflake_table_to_s3_no_overwrite(mock_sf_connection):  # noqa: F811
+    mock_cursor = mock_sf_connection.cursor()
+
+    with Flow("test") as f:
+        snowflake.export_snowflake_table_to_s3(
+            sf_credentials={},
+            sf_database="test_database",
+            sf_schema="test_schema",
+            sf_table="test_table",
+            sf_role="test_role",
+            sf_warehouse="test_warehouse",
+            sf_storage_integration="test_storage_integration",
+            s3_path="s3://edx-test/test/",
+            overwrite=False,
+        )
+    state = f.run()
+    assert state.is_successful()
+
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n    "),  # noqa
+        ]
+    )
