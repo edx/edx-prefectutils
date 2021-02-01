@@ -1,8 +1,9 @@
-backoff==1.10.0
-boto3<1.10.0
-botocore<1.13.0
+backoff
+boto3
+botocore
 ciso8601
 edx-opaque-keys
 hvac
+importlib-metadata<2  # Pinned for tox and virtualenv
 paramiko
-prefect[aws,google,snowflake,viz]==0.13.13
+prefect[aws,google,snowflake,viz]==0.14.5
