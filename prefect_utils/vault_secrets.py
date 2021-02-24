@@ -35,7 +35,7 @@ SERVICE_ACCOUNT_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/
 
 # Global configuration for accessing vault from all Prefect flows inside of the analytics k8s
 # cluster.
-VAULT_BASE_URL = "http://analytics-vault.vault:8200"
+VAULT_BASE_URL = "https://vault.analytics.edx.org"
 VAULT_LOGIN_URL = VAULT_BASE_URL + "/v1/auth/kubernetes/login"
 VAULT_ROLE = "prefect"
 
