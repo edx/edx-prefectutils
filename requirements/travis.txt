@@ -12,7 +12,7 @@ chardet==4.0.0
     # via requests
 codecov==2.1.11
     # via -r requirements/travis.in
-coverage==5.4
+coverage==5.5
     # via codecov
 distlib==0.3.1
     # via virtualenv
@@ -22,12 +22,7 @@ filelock==3.0.12
     #   virtualenv
 idna==2.10
     # via requests
-importlib-metadata==3.4.0
-    # via
-    #   pluggy
-    #   tox
-    #   virtualenv
-packaging==20.8
+packaging==20.9
     # via tox
 pluggy==0.13.1
     # via tox
@@ -45,15 +40,11 @@ toml==0.10.2
     # via tox
 tox-battery==0.6.1
     # via -r requirements/travis.in
-tox==3.21.3
+tox==3.23.0
     # via
     #   -r requirements/travis.in
     #   tox-battery
-typing-extensions==3.7.4.3
-    # via importlib-metadata
 urllib3==1.26.3
     # via requests
-virtualenv==20.4.0
+virtualenv==20.4.2
     # via tox
-zipp==3.4.0
-    # via importlib-metadata
