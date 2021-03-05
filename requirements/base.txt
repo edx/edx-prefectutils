@@ -212,11 +212,16 @@ requests==2.25.1
     #   msrest
     #   prefect
     #   requests-oauthlib
+    #   sailthru-client
     #   snowflake-connector-python
 rsa==4.7.2
     # via google-auth
 s3transfer==0.3.4
     # via boto3
+sailthru-client==2.3.5
+    # via -r requirements/base.in
+simplejson==3.17.2
+    # via sailthru-client
 six==1.15.0
     # via
     #   azure-core

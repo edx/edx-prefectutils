@@ -386,6 +386,7 @@ requests==2.25.1
     #   prefect
     #   requests-oauthlib
     #   requests-toolbelt
+    #   sailthru-client
     #   snowflake-connector-python
     #   sphinx
     #   twine
@@ -397,6 +398,12 @@ s3transfer==0.3.4
     # via
     #   -r requirements/base.txt
     #   boto3
+sailthru-client==2.3.5
+    # via -r requirements/base.txt
+simplejson==3.17.2
+    # via
+    #   -r requirements/base.txt
+    #   sailthru-client
 six==1.15.0
     # via
     #   -r requirements/base.txt
