@@ -5,5 +5,6 @@ ciso8601
 edx-opaque-keys
 hvac
 importlib-metadata<2  # Pinned for tox and virtualenv
+mysql-connector-python
 paramiko
 prefect[aws,google,snowflake,viz]==0.14.5
