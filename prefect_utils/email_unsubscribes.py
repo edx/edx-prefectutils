@@ -2,7 +2,7 @@
 import backoff
 import prefect
 import requests
-from prefect import context, task
+from prefect import task
 from sailthru.sailthru_client import SailthruClient
 from sailthru.sailthru_error import SailthruClientError
 from snowflake.connector import ProgrammingError
