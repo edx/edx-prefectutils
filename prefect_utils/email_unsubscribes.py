@@ -89,6 +89,7 @@ def sync_braze_to_sailthru(
     sailthru_api_key: str,
     sailthru_api_secret: str,
 ):
+    logger = prefect.context.get("logger")
     sailthru_client = SailthruClient(sailthru_api_key, sailthru_api_secret)
     sf_connection = snowflake.create_snowflake_connection(
         sf_credentials,
@@ -102,8 +103,13 @@ def sync_braze_to_sailthru(
     )
     cursor = sf_connection.cursor()
     cursor.execute(query)
+    counter = 0
+
     for row in cursor:
+        counter += 1
         unsubscribe_email_sailthru(sailthru_client, row[0])
+        if counter % 500 == 0:
+            logger.info("%s users processed.", counter)
 
 
 @backoff.on_exception(backoff.expo, SailthruClientError, max_tries=5)
