@@ -1,7 +1,8 @@
 
 import backoff
+import prefect
 import requests
-from prefect import context, task
+from prefect import task
 from sailthru.sailthru_client import SailthruClient
 from sailthru.sailthru_error import SailthruClientError
 from snowflake.connector import ProgrammingError
@@ -21,7 +22,7 @@ def sync_sailthru_to_braze(
     braze_api_key: str,
     braze_api_server: str,
 ):
-    logger = context.get("logger")
+    logger = prefect.context.get("logger")
 
     sf_connection = snowflake.create_snowflake_connection(
         sf_credentials,
@@ -88,6 +89,7 @@ def sync_braze_to_sailthru(
     sailthru_api_key: str,
     sailthru_api_secret: str,
 ):
+    logger = prefect.context.get("logger")
     sailthru_client = SailthruClient(sailthru_api_key, sailthru_api_secret)
     sf_connection = snowflake.create_snowflake_connection(
         sf_credentials,
@@ -101,12 +103,17 @@ def sync_braze_to_sailthru(
     )
     cursor = sf_connection.cursor()
     cursor.execute(query)
+    counter = 0
+
     for row in cursor:
+        counter += 1
         unsubscribe_email_sailthru(sailthru_client, row[0])
+        if counter % 500 == 0:
+            logger.info("%s users processed.", counter)
 
 
-@backoff.on_exception(backoff.expo, SailthruClientError, max_tries=3)
-@backoff.on_predicate(backoff.expo, lambda resp: not resp.is_ok(), max_tries=3)
+@backoff.on_exception(backoff.expo, SailthruClientError, max_tries=5)
+@backoff.on_predicate(backoff.expo, lambda resp: not resp.is_ok(), max_tries=5)
 # Retry rate limit errors for 5 minutes
 @backoff.on_predicate(
     backoff.expo,
@@ -114,6 +121,6 @@ def sync_braze_to_sailthru(
     max_time=300
 )
 def unsubscribe_email_sailthru(sailthru_client, email):
-    logger = context.get("logger")
+    logger = prefect.context.get("logger")
     logger.debug("About to unsubscribe user %s from sailthru", email)
     return sailthru_client.save_user(email, {'optout_email': 'all'})
