@@ -1,5 +1,6 @@
 
 import backoff
+import prefect
 import requests
 from prefect import context, task
 from sailthru.sailthru_client import SailthruClient
@@ -21,7 +22,7 @@ def sync_sailthru_to_braze(
     braze_api_key: str,
     braze_api_server: str,
 ):
-    logger = context.get("logger")
+    logger = prefect.context.get("logger")
 
     sf_connection = snowflake.create_snowflake_connection(
         sf_credentials,
@@ -114,6 +115,6 @@ def sync_braze_to_sailthru(
     max_time=300
 )
 def unsubscribe_email_sailthru(sailthru_client, email):
-    logger = context.get("logger")
+    logger = prefect.context.get("logger")
     logger.debug("About to unsubscribe user %s from sailthru", email)
     return sailthru_client.save_user(email, {'optout_email': 'all'})
