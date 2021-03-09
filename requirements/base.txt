@@ -10,20 +10,20 @@ asn1crypto==1.4.0
     #   snowflake-connector-python
 azure-common==1.1.26
     # via snowflake-connector-python
-azure-core==1.10.0
+azure-core==1.11.0
     # via azure-storage-blob
-azure-storage-blob==12.7.1
+azure-storage-blob==12.8.0
     # via snowflake-connector-python
 backoff==1.10.0
     # via -r requirements/base.in
 bcrypt==3.2.0
     # via paramiko
-boto3==1.16.62
+boto3==1.17.21
     # via
     #   -r requirements/base.in
     #   prefect
     #   snowflake-connector-python
-botocore==1.19.62
+botocore==1.20.21
     # via
     #   -r requirements/base.in
     #   boto3
@@ -35,7 +35,7 @@ certifi==2020.12.5
     #   msrest
     #   requests
     #   snowflake-connector-python
-cffi==1.14.4
+cffi==1.14.5
     # via
     #   bcrypt
     #   cryptography
@@ -58,37 +58,38 @@ cloudpickle==1.6.0
     #   prefect
 croniter==0.3.37
     # via prefect
-cryptography==3.3.1
+cryptography==3.4.6
     # via
     #   azure-storage-blob
     #   paramiko
     #   pyopenssl
     #   snowflake-connector-python
-dask==2021.1.1
+dask==2021.2.0
     # via
     #   distributed
     #   prefect
-distributed==2021.1.1
+distributed==2021.2.0
     # via prefect
-docker==4.4.1
+docker==4.4.4
     # via prefect
 edx-opaque-keys==2.2.0
     # via -r requirements/base.in
-google-api-core==1.25.1
+google-api-core==1.26.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-core
-google-auth==1.24.0
+google-auth==1.27.1
     # via
     #   google-api-core
+    #   google-cloud-core
     #   google-cloud-storage
 google-cloud-bigquery==1.28.0
     # via prefect
-google-cloud-core==1.5.0
+google-cloud-core==1.6.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==1.35.0
+google-cloud-storage==1.36.1
     # via prefect
 google-crc32c==1.1.2
     # via google-resumable-media
@@ -96,23 +97,21 @@ google-resumable-media==1.2.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.52.0
+googleapis-common-protos==1.53.0
     # via google-api-core
 graphviz==0.16
     # via prefect
 heapdict==1.0.1
     # via zict
-hvac==0.10.6
+hvac==0.10.8
     # via -r requirements/base.in
 idna==2.10
     # via
     #   requests
     #   snowflake-connector-python
 importlib-metadata==1.7.0
-    # via
-    #   -r requirements/base.in
-    #   stevedore
-importlib-resources==5.1.0
+    # via -r requirements/base.in
+importlib-resources==5.1.2
     # via prefect
 isodate==0.6.0
     # via msrest
@@ -134,14 +133,16 @@ msrest==0.6.21
     # via azure-storage-blob
 mypy-extensions==0.4.3
     # via prefect
-mysql-connector-python==8.0.22
-    # # via -r requirements/base.in
+mysql-connector-python==8.0.23
+    # via -r requirements/base.in
 natsort==7.1.1
     # via croniter
 oauthlib==3.1.0
     # via requests-oauthlib
 oscrypto==1.2.1
     # via snowflake-connector-python
+packaging==20.9
+    # via google-api-core
 paramiko==2.7.2
     # via -r requirements/base.in
 pbr==5.5.1
@@ -150,7 +151,7 @@ pendulum==2.1.2
     # via prefect
 prefect[aws,google,snowflake,viz]==0.14.5
     # via -r requirements/base.in
-protobuf==3.14.0
+protobuf==3.15.5
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -165,17 +166,19 @@ pyasn1==0.4.8
     #   rsa
 pycparser==2.20
     # via cffi
-pycryptodomex==3.9.9
+pycryptodomex==3.10.1
     # via snowflake-connector-python
-pyjwt==1.7.1
+pyjwt==2.0.1
     # via snowflake-connector-python
-pymongo==3.11.2
+pymongo==3.11.3
     # via edx-opaque-keys
 pynacl==1.4.0
     # via paramiko
 pyopenssl==19.1.0
     # via snowflake-connector-python
-python-box==5.2.0
+pyparsing==2.4.7
+    # via packaging
+python-box==5.3.0
     # via prefect
 python-dateutil==2.8.1
     # via
@@ -185,7 +188,7 @@ python-dateutil==2.8.1
     #   prefect
 python-slugify==4.0.1
     # via prefect
-pytz==2020.5
+pytz==2021.1
     # via
     #   google-api-core
     #   prefect
@@ -209,16 +212,20 @@ requests==2.25.1
     #   msrest
     #   prefect
     #   requests-oauthlib
+    #   sailthru-client
     #   snowflake-connector-python
-rsa==4.7
+rsa==4.7.2
     # via google-auth
 s3transfer==0.3.4
     # via boto3
+sailthru-client==2.3.5
+    # via -r requirements/base.in
+simplejson==3.17.2
+    # via sailthru-client
 six==1.15.0
     # via
     #   azure-core
     #   bcrypt
-    #   cryptography
     #   docker
     #   google-api-core
     #   google-auth
@@ -232,13 +239,13 @@ six==1.15.0
     #   pyopenssl
     #   python-dateutil
     #   websocket-client
-snowflake-connector-python==2.3.9
+snowflake-connector-python==2.4.1
     # via prefect
 sortedcontainers==2.3.0
     # via distributed
 stevedore==3.3.0
     # via edx-opaque-keys
-tabulate==0.8.7
+tabulate==0.8.9
     # via prefect
 tblib==1.7.0
     # via distributed
@@ -255,14 +262,12 @@ urllib3==1.26.3
     #   botocore
     #   prefect
     #   requests
-websocket-client==0.57.0
+websocket-client==0.58.0
     # via docker
 zict==2.0.0
     # via distributed
-zipp==3.4.0
-    # via
-    #   importlib-metadata
-    #   importlib-resources
+zipp==3.4.1
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -65,7 +65,8 @@ def test_create_snowflake_connection(mocker):  # noqa: F811
         autocommit=False,
         private_key=1234,
         user='test_user',
-        warehouse=None
+        warehouse=None,
+        password=None,
     )
     mock_cursor.execute.assert_has_calls(
         (
