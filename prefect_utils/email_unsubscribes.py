@@ -106,8 +106,8 @@ def sync_braze_to_sailthru(
         unsubscribe_email_sailthru(sailthru_client, row[0])
 
 
-@backoff.on_exception(backoff.expo, SailthruClientError, max_tries=3)
-@backoff.on_predicate(backoff.expo, lambda resp: not resp.is_ok(), max_tries=3)
+@backoff.on_exception(backoff.expo, SailthruClientError, max_tries=5)
+@backoff.on_predicate(backoff.expo, lambda resp: not resp.is_ok(), max_tries=5)
 # Retry rate limit errors for 5 minutes
 @backoff.on_predicate(
     backoff.expo,
