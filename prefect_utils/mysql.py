@@ -124,7 +124,7 @@ def load_s3_data_to_mysql(
         query = """
             LOAD DATA FROM S3 PREFIX '{s3_url}'
             INTO TABLE {table}
-            FIELDS TERMINATED BY '{delimiter}' ENCLOSED BY '{enclosed_by}'
+            FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
         """.format(
