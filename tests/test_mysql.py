@@ -146,6 +146,7 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
         ]
     )
 
+
 def test_table_creation_with_indexes(mock_mysql_connection):
     mock_cursor = mock_mysql_connection.cursor()
     with Flow("test") as f:
@@ -164,6 +165,6 @@ def test_table_creation_with_indexes(mock_mysql_connection):
     assert state.is_successful()
     mock_cursor.execute.assert_has_calls(
         [
-            mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (user_id int,course_id varchar(255) NOT NULL,INDEX (user_id),INDEX (course_id),INDEX (user_id,course_id))\n    "),
+            mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (user_id int,course_id varchar(255) NOT NULL,INDEX (user_id),INDEX (course_id),INDEX (user_id,course_id))\n    "), # noqa
         ]
     )
