@@ -142,7 +142,9 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
             mock.call("DROP TABLE IF EXISTS test_table_temp"),
             mock.call("CREATE TABLE test_table_temp (id int,course_id varchar(255) NOT NULL)"),
             mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
-            mock.call("RENAME TABLE test_table to test_table_old, test_table_temp to test_table")
+            mock.call("RENAME TABLE test_table to test_table_old, test_table_temp to test_table"),
+            mock.call("DROP TABLE IF EXISTS test_table_old"),
+            mock.call("DROP TABLE IF EXISTS test_table_temp"),
         ]
     )
 

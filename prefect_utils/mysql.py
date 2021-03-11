@@ -151,4 +151,5 @@ def load_s3_data_to_mysql(
         connection.rollback()
         raise
     finally:
+        _drop_temp_tables(table, connection)
         connection.close()
