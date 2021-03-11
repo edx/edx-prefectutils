@@ -28,13 +28,15 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
 def load_s3_data_to_mysql(
     aurora_credentials: dict,
     database: str,
-    table: str,
-    table_schema: list,
     s3_url: str,
+    table: str,
+    table_columns: list,
+    table_indexes: list = [],
     field_delimiter: str = ',',
     enclosed_by: str = '',
     escaped_by: str = '\\\\',
     record_filter: str = '',
+    ignore_num_lines: int = 0,
     overwrite: bool = False,
     overwrite_with_temp_table: bool = False,
 ):
@@ -45,10 +47,12 @@ def load_s3_data_to_mysql(
     Args:
       aurora_credentials (dict): Aurora credentials dict containing `user`, `password` and `host`.
       database (str): Name of the destination database.
-      table (str): Name of the destination table.
-      table_schema (list): List of tuples specifying table schema.
-              Example: `[('id', 'int'), ('course_id', 'varchar(255) NOT NULL')]`
       s3_url (str): Full S3 URL containing the files to load into the destination table .
+      table (str): Name of the destination table.
+      table_columns (list): List of tuples specifying table schema.
+              Example: `[('id', 'int'), ('course_id', 'varchar(255) NOT NULL')]`
+      table_indexes (list): List of tuples specifying table indexes to add. Defaults to `[]`.
+              Example: `[('user_id',), ('course_id',), ('user_id', 'course_id')]`
       field_delimiter (str, optional): The character used to indicate how the fields in input files are delimited.
               Defaults to `,`.
       enclosed_by (str, optional): Single character string that specifies the fields enclosing character.
@@ -57,6 +61,8 @@ def load_s3_data_to_mysql(
               other escape sequences. Defaults to backslash(`\\`).
       record_filter (str, optional): Entire `WHERE` clause which specifies the data to overwrite. An empty value
               with overwrite=True will delete all the rows from the table.
+      ignore_num_lines (int, optional): Specifies to ignore a certain number of lines at the start of the input file.
+              Defaults to 0.
       overwrite (bool, optional): Whether to overwrite existing data in the destination Table. Defaults to `False`.
       overwrite_with_temp_table (bool, optional): Whether to use a temporary table to overwrite data instead of
               `DELETE`. The data would first be loaded into a new table followed by an atomic rename. Use this option
@@ -72,6 +78,13 @@ def load_s3_data_to_mysql(
     logger = get_logger()
 
     connection = create_mysql_connection(aurora_credentials, database)
+
+    table_schema = []
+
+    table_schema.extend(table_columns)
+
+    for indexed_cols in table_indexes:
+        table_schema.append(("INDEX", "({cols})".format(cols=','.join(indexed_cols))))
 
     table_schema = ','.join(
         '{name} {definition}'.format(name=name, definition=definition) for name, definition in table_schema
@@ -113,12 +126,14 @@ def load_s3_data_to_mysql(
             INTO TABLE {table}
             FIELDS TERMINATED BY '{delimiter}' ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
+            IGNORE {ignore_lines} LINES
         """.format(
             s3_url=s3_url,
             table=table if not overwrite_with_temp_table else table + '_temp',
             delimiter=field_delimiter,
             enclosed_by=enclosed_by,
             escaped_by=escaped_by,
+            ignore_lines=ignore_num_lines,
         )
         connection.cursor().execute(query)
 
