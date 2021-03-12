@@ -36,6 +36,7 @@ def sync_sailthru_to_braze(
     )
     cursor = sf_connection.cursor()
     cursor.execute(query)
+    count = 0
     # 50 email batches because that's how many braze accepts at a time
     batch = cursor.fetchmany(50)
     while len(batch) > 0:
@@ -44,7 +45,9 @@ def sync_sailthru_to_braze(
             braze_api_key,
             [row[0] for row in batch]
         )
-        logger.info("Unsubscribed %d emails from braze", len(batch))
+        count += len(batch)
+        if count % 500 == 0:
+            logger.info("Unsubscribed %d emails from braze", count)
         batch = cursor.fetchmany(50)
 
 
