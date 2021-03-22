@@ -67,7 +67,7 @@ def unsubscribe_emails_braze(braze_api_server, braze_api_key, emails):
     if len(emails) > 50:
         raise ValueError(
             f"At most 50 emails at a time can be unsubscribed "
-            "to Braze, attempted {len(emails})"
+            f"to Braze, attempted {len(emails)}"
         )
 
     return requests.post(
