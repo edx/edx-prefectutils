@@ -7,7 +7,7 @@ prefect-utils
 
 
 
-Utility code to assist in writing Prefect Flows.
+A utility code written by edX specifically for edX Prefect Flows. It assists writing in edX Prefect Flows.
 
 
 
