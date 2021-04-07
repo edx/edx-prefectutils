@@ -39,7 +39,7 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='prefect_utils',
-    name='edx-prefect-utils',
+    name='edx-prefectutils',
     packages=find_packages(include=['prefect_utils', 'prefect_utils.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
