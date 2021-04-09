@@ -1,4 +1,4 @@
-* prefect-utils version:
+* edx-prefectutils version:
 * Python version:
 * Operating System:
 

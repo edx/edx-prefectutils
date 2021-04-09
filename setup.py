@@ -32,19 +32,19 @@ setup(
     description="Utility code to assist in writing Prefect Flows.",
     entry_points={
         'console_scripts': [
-            'prefect_utils=prefect_utils.cli:main',
+            'edx_prefectutils=edx_prefectutils.cli:main',
         ],
     },
     install_requires=requirements,
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='prefect_utils',
+    keywords='edx_prefectutils',
     name='edx-prefectutils',
-    packages=find_packages(include=['prefect_utils', 'prefect_utils.*']),
+    packages=find_packages(include=['edx_prefectutils', 'edx_prefectutils.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/doctoryes/prefect_utils',
+    url='https://github.com/doctoryes/edx_prefectutils',
     version='0.1.0',
     zip_safe=False,
 )

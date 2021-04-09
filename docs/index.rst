@@ -1,4 +1,4 @@
-Welcome to prefect-utils's documentation!
+Welcome to edx-prefectutils's documentation!
 =========================================
 
 .. toctree::

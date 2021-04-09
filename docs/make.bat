@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=prefect_utils
+set SPHINXPROJ=edx_prefectutils
 
 if "%1" == "" goto help
 

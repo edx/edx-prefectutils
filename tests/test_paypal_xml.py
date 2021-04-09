@@ -6,14 +6,14 @@ from unittest import TestCase
 import httpretty
 from ddt import data, ddt, unpack
 
-from prefect_utils.paypal_xml import (ColumnMetadata,
-                                      PaypalApiRequestFailedError,
-                                      PaypalMalformedResponseError,
-                                      PaypalReportDataRequest,
-                                      PaypalReportMetadataRequest,
-                                      PaypalReportRequest,
-                                      PaypalReportResultsRequest,
-                                      SettlementReportRecord)
+from edx_prefectutils.paypal_xml import (ColumnMetadata,
+                                         PaypalApiRequestFailedError,
+                                         PaypalMalformedResponseError,
+                                         PaypalReportDataRequest,
+                                         PaypalReportMetadataRequest,
+                                         PaypalReportRequest,
+                                         PaypalReportResultsRequest,
+                                         SettlementReportRecord)
 
 TEST_URL = 'http://test.api/endpoint'
 
