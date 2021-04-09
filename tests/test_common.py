@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 """
-Tests for BigQuery utils in the `prefect_utils` package.
+Tests for BigQuery utils in the `edx_prefectutils` package.
 """
 
 from prefect.core import Flow
 
-from prefect_utils import common
+from edx_prefectutils import common
 
 
 def test_generate_dates():

@@ -1,4 +1,4 @@
 [run]
 branch = True
 data_file = .coverage
-source=edx-prefectutils
+source=edx_prefectutils

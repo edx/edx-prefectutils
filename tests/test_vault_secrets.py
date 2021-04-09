@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 """
-Tests for Hashicorp Vault secrets utils in the `edx-prefectutils` package.
+Tests for Hashicorp Vault secrets utils in the `edx_prefectutils` package.
 """
 
 from prefect import Flow, task, unmapped
 from pytest_mock import mocker  # noqa: F401
 
-from edx-prefectutils import vault_secrets
+from edx_prefectutils import vault_secrets
 
 
 @task

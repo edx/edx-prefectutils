@@ -11,7 +11,7 @@ from paramiko import SFTPClient, Transport
 from prefect import config, task
 from prefect.engine import signals
 
-from edx-prefectutils.s3 import get_s3_path_for_date, list_object_keys_from_s3
+from edx_prefectutils.s3 import get_s3_path_for_date, list_object_keys_from_s3
 
 
 def check_paypal_report(sftp_connection, remote_filename, check_column_name):

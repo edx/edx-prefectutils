@@ -6,7 +6,7 @@ from unittest import TestCase
 import httpretty
 from ddt import data, ddt, unpack
 
-from edx-prefectutils.paypal_xml import (ColumnMetadata,
+from edx_prefectutils.paypal_xml import (ColumnMetadata,
                                       PaypalApiRequestFailedError,
                                       PaypalMalformedResponseError,
                                       PaypalReportDataRequest,

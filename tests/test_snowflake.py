@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tests for Snowflake utils in the `edx-prefectutils` package.
+Tests for Snowflake utils in the `edx_prefectutils` package.
 """
 
 import mock
@@ -12,7 +12,7 @@ from prefect.utilities.debug import raise_on_exception
 from pytest_mock import mocker  # noqa: F401
 from snowflake.connector import ProgrammingError
 
-from edx-prefectutils import snowflake
+from edx_prefectutils import snowflake
 
 
 def test_qualified_table_name():

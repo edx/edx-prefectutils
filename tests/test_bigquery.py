@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 """
-Tests for BigQuery utils in the `edx-prefectutils` package.
+Tests for BigQuery utils in the `edx_prefectutils` package.
 """
 
 from prefect.core import Flow
 from pytest_mock import mocker  # noqa: F401
 
-from edx-prefectutils import bigquery
+from edx_prefectutils import bigquery
 
 
 def test_cleanup_gcs_files(mocker):  # noqa: F811
