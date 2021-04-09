@@ -1,5 +1,5 @@
 =============
-prefect-utils
+edx-prefectutils
 =============
 
 
