@@ -9,7 +9,7 @@ import requests
 from ddt import data, ddt, unpack
 from mock import patch
 
-from prefect_utils.edx_api_client import EdxApiClient
+from edx-prefectutils.edx_api_client import EdxApiClient
 
 FAKE_AUTH_URL = 'http://example.com/oauth2/access_token'
 FAKE_CLIENT_ID = 'aclientid'
@@ -39,7 +39,7 @@ class EdxApiClientTestCase(TestCase):
                 """Return the time specified by the time offset"""
                 return self.current_time + timedelta(seconds=self.time_offset)
 
-        datetime_patcher = patch('prefect_utils.edx_api_client.datetime', MockDateTime)
+        datetime_patcher = patch('edx-prefectutils.edx_api_client.datetime', MockDateTime)
         datetime_patcher.start()
         self.addCleanup(datetime_patcher.stop)
 

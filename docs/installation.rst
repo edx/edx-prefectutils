@@ -8,11 +8,11 @@ Installation
 Stable release
 --------------
 
-To install prefect-utils, run this command in your terminal:
+To install edx-prefectutils, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install prefect_utils
+    $ pip install edx-prefectutils
 
 This is the preferred method to install prefect-utils, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/doctoryes/prefect_utils
+    $ git clone git://github.com/doctoryes/edx-prefectutils
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/doctoryes/prefect_utils/tarball/master
+    $ curl -OJL https://github.com/doctoryes/edx-prefectutils/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/doctoryes/prefect_utils
-.. _tarball: https://github.com/doctoryes/prefect_utils/tarball/master
+.. _Github repo: https://github.com/doctoryes/edx-prefectutils
+.. _tarball: https://github.com/doctoryes/edx-prefectutils/tarball/master
