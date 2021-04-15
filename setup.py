@@ -4,11 +4,37 @@
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
-    readme = readme_file.read()
+import os
+import re
+import sys
 
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
+from setuptools import setup
+
+
+def get_version(*file_paths):
+    """
+    Extract the version string from the file at the given relative path fragments.
+    """
+    filename = os.path.join(os.path.dirname(__file__), *file_paths)
+    version_file = open(filename).read()
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError('Unable to find version string.')
+
+
+VERSION = get_version('edx_prefectutils', '__init__.py')
+
+if sys.argv[-1] == 'tag':
+    print("Tagging the version on github:")
+    os.system("git tag -a %s -m 'version %s'" % (VERSION, VERSION))
+    os.system("git push --tags")
+    sys.exit()
+
+README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
+
+
 
 requirements = ['Click>=7.0', ]
 
@@ -36,7 +62,7 @@ setup(
         ],
     },
     install_requires=requirements,
-    long_description=readme + '\n\n' + history,
+    long_description=README,
     include_package_data=True,
     keywords='edx_prefectutils',
     name='edx-prefectutils',
@@ -45,6 +71,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/doctoryes/edx_prefectutils',
-    version='0.1.0',
+    version=VERSION,
     zip_safe=False,
 )
