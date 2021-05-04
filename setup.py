@@ -23,6 +23,35 @@ def get_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError('Unable to find version string.')
 
+def load_requirements(*requirements_paths):
+    """
+    Load all requirements from the specified requirements files.
+    Returns:
+        list: Requirements file relative path strings
+    """
+    requirements = set()
+    for path in requirements_paths:
+        requirements.update(
+            line.split('#')[0].strip() for line in open(path).readlines()
+            if is_requirement(line.strip())
+        )
+    return list(requirements)
+
+
+def is_requirement(line):
+    """
+    Return True if the requirement line is a package requirement.
+    Returns:
+        bool: True if the line is not blank, a comment, a URL, or an included file
+    """
+    return not (
+        line == '' or
+        line.startswith('-r') or
+        line.startswith('#') or
+        line.startswith('-e') or
+        line.startswith('git+') or
+        line.startswith('-c')
+    )
 
 VERSION = get_version('edx_prefectutils', '__init__.py')
 
@@ -36,7 +65,6 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 
 
 
-requirements = ['Click>=7.0', ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -61,7 +89,7 @@ setup(
             'edx_prefectutils=edx_prefectutils.cli:main',
         ],
     },
-    install_requires=requirements,
+    install_requires=load_requirements('requirements/base.in'),
     long_description=README,
     include_package_data=True,
     keywords='edx_prefectutils',
