@@ -2,7 +2,8 @@
 Utility methods and tasks for working with Snowflake from a Prefect flow.
 """
 import os
-from typing import TypedDict
+from collections import namedtuple
+from typing import List, TypedDict
 
 import backoff
 import snowflake.connector
@@ -487,3 +488,62 @@ def export_snowflake_table_to_s3(
         sf_connection.close()
 
     return export_path
+
+
+def get_batched_rows_from_snowflake(
+    sf_credentials: SFCredentials,
+    sf_database: str,
+    sf_schema: str,
+    sf_table: str,
+    sf_role: str,
+    columns: List[str],
+    batch_size: int,
+    where: str = None,
+):
+    """
+    Query batches of rows from snowflake as a generator.
+
+    Args:
+      sf_credentials (SFCredentials): Snowflake public key credentials in the format
+              required by create_snowflake_connection.
+      sf_database (str): Name of the source database.
+      sf_schema (str): Name of the source schema.
+      sf_table (str): Name of the source table.
+      sf_role (str): Name of the snowflake role to assume.
+      columns (list[str]): The column field names you want to select.
+      batch_size (int): How many at most to return at once.
+      where (str, optional): A WHERE query string for the snowflake SELECT call. None will return all rows.
+
+    Returns:
+      A generator that yields lists of row objects. Each list will be at most `batch_size` long.
+      Each row object will be a named tuple with the field names of the provided `columns`.
+
+    Examples:
+      for rows in get_batched_rows_from_snowflake(..., ['foo', 'bar'], 75):
+        for row in rows:
+          print('Got foo %s and bar %s', row.foo, row.bar)
+
+      for rows in get_batched_rows_from_snowflake(..., ['foo'], 50, where='bar is null'):
+        for row in rows:
+          print('Got foo %s', row.foo)
+    """
+    sf_connection = create_snowflake_connection(
+        sf_credentials,
+        sf_role,
+    )
+
+    query = 'SELECT {columns} FROM {table}'.format(
+        columns=', '.join(columns),
+        table=qualified_table_name(sf_database, sf_schema, sf_table),
+    )
+    if where:
+        query += ' WHERE ' + where
+
+    cursor = sf_connection.cursor()
+    cursor.execute(query)
+
+    SnowFlakeRow = namedtuple('SnowFlakeRow', columns)
+    batch = cursor.fetchmany(batch_size)
+    while len(batch) > 0:
+        yield [SnowFlakeRow(*row) for row in batch]
+        batch = cursor.fetchmany(batch_size)
