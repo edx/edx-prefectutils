@@ -103,7 +103,8 @@ def test_load_s3_data_to_mysql(mock_mysql_connection):
             s3_url="s3://edx-test/test/",
             record_filter="where course_id='edX/Open_DemoX/edx_demo_course'",
             ignore_num_lines=2,
-            overwrite=True
+            overwrite=True,
+            table_column_manual_assignments=[['id', 'NULL'], ['created', 'CURRENT_TIMESTAMP']]
         )
 
     state = f.run()
@@ -113,7 +114,7 @@ def test_load_s3_data_to_mysql(mock_mysql_connection):
             mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (id int,course_id varchar(255) NOT NULL)\n    "), # noqa
             mock.call("SELECT 1 FROM test_table where course_id='edX/Open_DemoX/edx_demo_course' LIMIT 1"), # noqa
             mock.call("DELETE FROM test_table where course_id='edX/Open_DemoX/edx_demo_course'"), # noqa
-            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n            SET id=NULL, created=CURRENT_TIMESTAMP\n        "), # noqa
         ]
     )
 

@@ -32,6 +32,7 @@ def load_s3_data_to_mysql(
     table: str,
     table_columns: list,
     table_indexes: list = [],
+    table_column_manual_assignments: list = [],
     field_delimiter: str = ',',
     enclosed_by: str = '',
     escaped_by: str = '\\\\',
@@ -53,6 +54,10 @@ def load_s3_data_to_mysql(
               Example: `[('id', 'int'), ('course_id', 'varchar(255) NOT NULL')]`
       table_indexes (list): List of tuples specifying table indexes to add. Defaults to `[]`.
               Example: `[('user_id',), ('course_id',), ('user_id', 'course_id')]`
+      table_column_manual_assignments (list): List of lists where each list consists of two items. First item will be
+              the name of table column and second will be the value or an expression that should be assigned to column
+              Example: `[['id', 'NULL'], ['created', 'CURRENT_TIMESTAMP']]`
+              Outpu: `SET id=NULL, created=CURRENT_TIMESTAMP`
       field_delimiter (str, optional): The character used to indicate how the fields in input files are delimited.
               Defaults to `,`.
       enclosed_by (str, optional): Single character string that specifies the fields enclosing character.
@@ -115,26 +120,49 @@ def load_s3_data_to_mysql(
         query = "CREATE TABLE {table} ({table_schema})".format(table=table + '_temp', table_schema=table_schema)
         connection.cursor().execute(query)
 
+    manual_assignments = ', '.join(
+        '{}={}'.format(column, expression) for column, expression in table_column_manual_assignments
+    )
+    column_manual_assignments = 'SET {}'.format(manual_assignments) if manual_assignments else None
+
     try:
         if row and overwrite and not overwrite_with_temp_table:
             query = "DELETE FROM {table} {record_filter}".format(table=table, record_filter=record_filter)
             logger.debug("Deleting existing data for {table}".format(table=table))
             connection.cursor().execute(query)
 
-        query = """
-            LOAD DATA FROM S3 PREFIX '{s3_url}'
-            INTO TABLE {table}
-            FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
-            ESCAPED BY '{escaped_by}'
-            IGNORE {ignore_lines} LINES
-        """.format(
-            s3_url=s3_url,
-            table=table if not overwrite_with_temp_table else table + '_temp',
-            delimiter=field_delimiter,
-            enclosed_by=enclosed_by,
-            escaped_by=escaped_by,
-            ignore_lines=ignore_num_lines,
-        )
+        if not column_manual_assignments:
+            query = """
+                LOAD DATA FROM S3 PREFIX '{s3_url}'
+                INTO TABLE {table}
+                FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
+                ESCAPED BY '{escaped_by}'
+                IGNORE {ignore_lines} LINES
+            """.format(
+                s3_url=s3_url,
+                table=table if not overwrite_with_temp_table else table + '_temp',
+                delimiter=field_delimiter,
+                enclosed_by=enclosed_by,
+                escaped_by=escaped_by,
+                ignore_lines=ignore_num_lines,
+            )
+        else:
+            query = """
+                LOAD DATA FROM S3 PREFIX '{s3_url}'
+                INTO TABLE {table}
+                FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
+                ESCAPED BY '{escaped_by}'
+                IGNORE {ignore_lines} LINES
+                {column_manual_assignments}
+            """.format(
+                s3_url=s3_url,
+                table=table if not overwrite_with_temp_table else table + '_temp',
+                delimiter=field_delimiter,
+                enclosed_by=enclosed_by,
+                escaped_by=escaped_by,
+                ignore_lines=ignore_num_lines,
+                column_manual_assignments=column_manual_assignments
+            )
         connection.cursor().execute(query)
 
         if overwrite and overwrite_with_temp_table:
