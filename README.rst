@@ -2,11 +2,6 @@
 edx-prefectutils
 ================
 
-
-
-
-
-
 A utility code written by edX specifically for edX Prefect Flows. It assists writing in edX Prefect Flows.
 
 
