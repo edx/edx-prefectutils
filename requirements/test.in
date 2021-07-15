@@ -8,7 +8,7 @@ Sphinx==1.8.5
 twine==1.14.0
 pytest==4.6.5
 pytest-runner==5.1
-httpretty
+httpretty<1.1.0  # can remove constraint once https://github.com/gabrielfalcao/HTTPretty/issues/425 is fixed
 ddt
 mock
 pytest-mock==3.1.1
