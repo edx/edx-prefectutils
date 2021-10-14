@@ -77,7 +77,8 @@ def get_paypal_filename(date, prefix, connection, remote_path):
     pattern = (prefix, date_string, 'CSV')
     remote_filepattern = "*".join(pattern)
     for file in connection.listdir(remote_path):
-        if fnmatch.fnmatch(file, remote_filepattern):
+        # Ignore any file containing `_TEST` in its name.
+        if fnmatch.fnmatch(file, remote_filepattern) and '_TEST' not in file:
             return file
     return None
 
