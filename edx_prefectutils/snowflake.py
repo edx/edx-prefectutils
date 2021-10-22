@@ -233,6 +233,7 @@ def load_s3_data_to_snowflake(
     pattern: str = None,
     overwrite: bool = False,
     truncate: bool = False,
+    disable_existence_check: bool = False,
 ):
     """
     Loads objects in S3 to a generic table in Snowflake, the data is stored in a variant column named
@@ -270,6 +271,8 @@ def load_s3_data_to_snowflake(
       pattern (str, optional): Path pattern/regex to match S3 objects to copy. Defaults to `None`.
       overwrite (bool, optional): Whether to overwrite existing data for the given date. Defaults to `False`.
       truncate (bool, optional): Whether to truncate the table. Defaults to `False`.
+      disable_existence_check (bool, optional): Whether to disable check for existing data, useful when
+              always appending to the table regardless of any existing data for that provided `date`
     """
     logger = get_logger()
     if not file and not pattern:
@@ -284,27 +287,28 @@ def load_s3_data_to_snowflake(
         cursor.execute(query)
 
     # Check for data existence for this date
-    try:
-        query = """
-        SELECT 1 FROM {table}
-        WHERE date(PROPERTIES:{date_property})=date('{date}')
-        """.format(
-            table=qualified_table_name(sf_database, sf_schema, sf_table),
-            date=date,
-            date_property=date_property,
-        )
+    if not disable_existence_check:
+        try:
+            query = """
+            SELECT 1 FROM {table}
+            WHERE date(PROPERTIES:{date_property})=date('{date}')
+            """.format(
+                table=qualified_table_name(sf_database, sf_schema, sf_table),
+                date=date,
+                date_property=date_property,
+            )
 
-        logger.info("Checking existence of data for {}".format(date))
+            logger.info("Checking existence of data for {}".format(date))
 
-        cursor = sf_connection.cursor()
-        cursor.execute(query)
-        row = cursor.fetchone()
-    except snowflake.connector.ProgrammingError as e:
-        if "does not exist" in e.msg:
-            # If so then the query failed because the table doesn't exist.
-            row = None
-        else:
-            raise
+            cursor = sf_connection.cursor()
+            cursor.execute(query)
+            row = cursor.fetchone()
+        except snowflake.connector.ProgrammingError as e:
+            if "does not exist" in e.msg:
+                # If so then the query failed because the table doesn't exist.
+                row = None
+            else:
+                raise
 
     if row and not overwrite:
         raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')

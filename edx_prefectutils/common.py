@@ -14,6 +14,18 @@ from prefect import task
 from prefect.engine.results import PrefectResult
 
 
+@task
+def get_date(date: str):
+    """
+    Return today's date string if date is None. Otherwise return the passed parameter value.
+    prefect.context.today is only available at task level, so we cannot use it as a default parameter value.
+    """
+    if date is None:
+        return prefect.context.today
+    else:
+        return date
+
+
 @task(result=PrefectResult())
 def generate_dates(start_date: str, end_date: str, date_format: str = "%Y%m%d"):
     """
