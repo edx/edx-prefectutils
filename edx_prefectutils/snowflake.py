@@ -287,6 +287,7 @@ def load_s3_data_to_snowflake(
         cursor.execute(query)
 
     # Check for data existence for this date
+    row = None
     if not disable_existence_check:
         try:
             query = """
