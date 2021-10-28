@@ -349,3 +349,52 @@ def test_export_snowflake_table_to_s3_no_overwrite(mock_sf_connection):  # noqa:
             mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n    "),  # noqa
         ]
     )
+
+
+def test_load_s3_data_to_snowflake_data_disable_check(mock_sf_connection):
+    mock_cursor = mock_sf_connection.cursor()
+    mock_fetchone = mock.Mock()
+    mock_cursor.fetchone = mock_fetchone
+
+    task = snowflake.load_s3_data_to_snowflake
+    task.run(
+        date="2020-01-01",
+        date_property='date',
+        sf_credentials={},
+        sf_database="test_database",
+        sf_schema="test_schema",
+        sf_table="test_table",
+        sf_role="test_role",
+        sf_warehouse="test_warehouse",
+        sf_storage_integration_name="test_storage_integration",
+        s3_url="s3://edx-test/test/",
+        file="test_file.csv",
+        pattern=".*",
+        overwrite=True,
+        disable_existence_check=True,
+    )
+    mock_call = mock.call("\n            SELECT 1 FROM test_database.test_schema.test_table\n            WHERE date(PROPERTIES:date)=date('2020-01-01')\n            ")  # noqa
+
+    assert mock_call not in mock_cursor.execute.mock_calls
+
+    task.run(
+        date="2020-01-01",
+        date_property='date',
+        sf_credentials={},
+        sf_database="test_database",
+        sf_schema="test_schema",
+        sf_table="test_table",
+        sf_role="test_role",
+        sf_warehouse="test_warehouse",
+        sf_storage_integration_name="test_storage_integration",
+        s3_url="s3://edx-test/test/",
+        file="test_file.csv",
+        pattern=".*",
+        overwrite=True,
+        disable_existence_check=False,
+    )
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock_call
+        ]
+    )
