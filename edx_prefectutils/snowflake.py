@@ -422,6 +422,7 @@ def export_snowflake_table_to_s3(
     escape_unenclosed_field: str = '\\\\',
     null_marker: str = 'NULL',
     overwrite: bool = True,
+    single: bool = True,
 ):
 
     """
@@ -445,6 +446,7 @@ def export_snowflake_table_to_s3(
               field values only. Defaults to snowflake default `\\`.
       null_marker (str, optional): String used to convert SQL NULL. Defaults to `NULL`.
       overwrite (bool, optional): Whether to overwrite existing data in S3. Defaults to `TRUE`.
+      single (bool, optional): Whether to generate a single file in S3. Defaults to `TRUE`.
     """
     logger = get_logger()
 
@@ -468,6 +470,7 @@ def export_snowflake_table_to_s3(
             COMPRESSION = NONE
             )
             OVERWRITE={overwrite}
+            SINGLE={single}
     """.format(
         export_path=export_path,
         table=table_name,
@@ -477,6 +480,7 @@ def export_snowflake_table_to_s3(
         escape_unenclosed_field=escape_unenclosed_field,
         null_marker=null_marker,
         overwrite=overwrite,
+        single=single
     )
     logger.info(query)
     cursor = sf_connection.cursor()
