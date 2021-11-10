@@ -422,7 +422,7 @@ def export_snowflake_table_to_s3(
     escape_unenclosed_field: str = '\\\\',
     null_marker: str = 'NULL',
     overwrite: bool = True,
-    single: bool = True,
+    single: bool = False,
 ):
 
     """
@@ -446,7 +446,9 @@ def export_snowflake_table_to_s3(
               field values only. Defaults to snowflake default `\\`.
       null_marker (str, optional): String used to convert SQL NULL. Defaults to `NULL`.
       overwrite (bool, optional): Whether to overwrite existing data in S3. Defaults to `TRUE`.
-      single (bool, optional): Whether to generate a single file in S3. Defaults to `TRUE`.
+      single (bool, optional): Whether to generate a single file in S3. Defaults to `FALSE`. The maximum file size
+              for a single file defaults to 16MB, although that default can be updated by adding a MAX_FILE_SIZE
+              copy option.
     """
     logger = get_logger()
 
