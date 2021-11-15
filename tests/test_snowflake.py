@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-
 """
 Tests for Snowflake utils in the `edx_prefectutils` package.
 """
 
+from unittest import TestCase
+
 import mock
 import pytest
+from ddt import data, ddt, unpack
 from prefect.core import Flow
 from prefect.engine import signals
 from prefect.utilities.debug import raise_on_exception
@@ -398,3 +400,61 @@ def test_load_s3_data_to_snowflake_data_disable_check(mock_sf_connection):
             mock_call
         ]
     )
+
+
+@ddt
+class TestLazySnowflakeResultList(TestCase):
+    @data(
+        ([[1, 2, 3], [4, 5, 6], [7, 8], [], []], 3),
+        ([[1, 2, 3], [4, 5, 6], [7, 8, 9], [], []], 3),
+    )
+    @unpack
+    def test_success(self, batches, fetch_size):
+        """
+        Test multiple aspects of successful scenarios.
+        """
+        # Flatten the batches to make a list which resembles the final results.
+        expected_results = [val for sublist in batches for val in sublist]
+
+        mock_cursor = mock.Mock()
+        mock_cursor.rowcount = len(expected_results)
+        mock_cursor.is_closed.side_effect = lambda: True if mock_cursor.close.mock_calls else False
+        mock_cursor.fetchmany.side_effect = batches
+        mock_connection = mock.Mock()
+        mock_connection.cursor.return_value = mock_cursor
+        test_sql = "select * from does_not_matter"
+        test_fetcher = snowflake.LazySnowflakeResultList(
+            mock_connection, test_sql, fetch_size=fetch_size
+        )
+
+        # After object construction, we should already have called cursor.execute().
+        mock_cursor.execute.assert_called_once_with(test_sql)
+
+        # The length should be reported as the logical length, rather than the actual length (which would still be 0 at
+        # this point, before any rows have been fetched.
+        assert len(test_fetcher) == len(expected_results)
+
+        # Actually make sure no fetches were attempted yet, despite already knowing the final length.
+        assert not mock_cursor.fetchmany.mock_calls
+
+        # Coerce a fetch.
+        assert test_fetcher[0] == expected_results[0]
+        assert test_fetcher[2] == expected_results[2]
+
+        # Make sure only a single fetch was made, despite multiple indexings.  All rows indexed so far are within the
+        # first fetch batch.
+        assert len(mock_cursor.fetchmany.mock_calls) == 1
+
+        # While we are still in the middle of fetching rows, attempt deleting some rows from the beginning and make sure
+        # it continues to behave the exact same way as a standard list.
+        assert len(test_fetcher) == len(expected_results)
+        del test_fetcher[:2]
+        del expected_results[:2]
+        assert len(test_fetcher) == len(expected_results)
+        assert test_fetcher[0] == expected_results[0]
+
+        # Coerce two more fetches and make sure the cursor was closed.
+        assert test_fetcher[4] == expected_results[4]
+        assert len(mock_cursor.fetchmany.mock_calls) == 3
+        assert len(test_fetcher) == len(expected_results)
+        assert mock_cursor.close.mock_calls
