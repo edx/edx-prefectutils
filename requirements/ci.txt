@@ -11,7 +11,7 @@ certifi==2021.5.30
 charset-normalizer==2.0.1
     # via requests
 codecov==2.1.11
-    # via -r requirements/travis.in
+    # via -r requirements/ci.in
 coverage==5.5
     # via codecov
 distlib==0.3.2
@@ -42,10 +42,10 @@ toml==0.10.2
     # via tox
 tox==3.23.1
     # via
-    #   -r requirements/travis.in
+    #   -r requirements/ci.in
     #   tox-battery
 tox-battery==0.6.1
-    # via -r requirements/travis.in
+    # via -r requirements/ci.in
 urllib3==1.26.6
     # via requests
 virtualenv==20.5.0
