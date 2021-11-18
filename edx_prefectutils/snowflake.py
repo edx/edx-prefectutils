@@ -3,6 +3,7 @@ Utility methods and tasks for working with Snowflake from a Prefect flow.
 """
 import os
 from collections import namedtuple
+from collections.abc import MutableSequence
 from typing import List, TypedDict
 
 import backoff
@@ -512,7 +513,7 @@ def get_batched_rows_from_snowflake(
     where: str = None,
 ):
     """
-    Query batches of rows from snowflake as a generator.
+    Export a table from snowflake and get batches of rows as a generator.
 
     Args:
       sf_credentials (SFCredentials): Snowflake public key credentials in the format
@@ -558,3 +559,111 @@ def get_batched_rows_from_snowflake(
     while len(batch) > 0:
         yield [SnowFlakeRow(*row) for row in batch]
         batch = cursor.fetchmany(batch_size)
+
+
+class LazySnowflakeResultList(MutableSequence):
+    """
+    Given a Snowflake connection and an arbitrary query, this creates a lazy list-like object which represents a
+    complete result set by deferring fetching batches of results until they are indexed.
+
+    Usage:
+    1. Create a new LazySnowflakeResultList providing the snowflake connection and a query to the constructor.
+    2. Call self.execute() on the resulting object.
+    3. Treat the resulting object as a list containing every row in the complete result set.
+
+    The higher you index, the more data gets fetched; eventually, if you index high enough, you will get an IndexError.
+    As you work through the list and process the data, consider deleting elements that aren't needed anymore:
+
+        del lazy_snowflake_result_list[:1000]  # delete first 1k records, encouraging the GC to deallocate that memory.
+
+    Caveats:
+    - Avoid indexing the list any order other than low to high.  Any other indexing pattern may result in a massive
+      number of batch fetches and memory allocation, defeating the purpose of this class.
+    - Slicing or otherwise indexing this object always "downgrades" the result to a standard list or element, so we can
+      safely pass output slices around without worrying that subsequent indexing of those output slices will
+      inadvertently mess up the internal state of the LazySnowflakeResultList.
+    """
+    def __init__(self, connection: snowflake.connector.SnowflakeConnection, query: str, fetch_size: int = 10000):
+        self._buffer = list()
+        self._connection = connection
+        self._query = query
+        self._fetch_size = fetch_size
+
+        self._fetched_rowcount = 0
+        self._cursor = self._connection.cursor()  # TODO: should we use a dict cursor?
+        self._cursor.execute(query)
+
+    def __len__(self) -> int:
+        """
+        Get the logical rowcount of this object.  In other words, what would len(self._buffer) return if all rows were
+        prefetched?
+
+        The reason this is different than self._cursor.rowcount is because by the time this function is called we may
+        already have deleted some rows from the internal list (e.g. to deallocate memory which isn't needed anymore).
+        """
+        return len(self._buffer) + self._cursor.rowcount - self._fetched_rowcount
+
+    def __getitem__(self, arg):
+        """
+        This behaves the exact same way as standard list indexing, except this allows indexing past the end of the list!
+        This function will make a best effort to return data for the given index by fetching batches of snowflake
+        records and accumulating them up to the index.
+
+        Raises:
+            TypeError: if the given arg isn't of type slice or int.
+            IndexError: if the given arg represents a list index which isn't backed by snowflake data.
+        """
+        logger = get_logger()
+
+        # First, determine the maximum index requested, which is what drives how many more batches to fetch from
+        # snowflake.
+        max_idx = None
+        if isinstance(arg, slice):
+            if arg.stop is None:
+                max_idx = len(self) - 1
+            else:
+                max_idx = arg.stop
+        elif isinstance(arg, int):
+            max_idx = arg
+        else:
+            raise TypeError("list index must be of type slice or int.")
+
+        # Next, make a best effort to fetch just the right amount of result batches to be able to index max_idx.
+        #
+        # Note: The requested index may be greater than the actual number of results, but here we make no attempt to
+        # remedy that.  Later in the code an IndexError will be raised.
+        while max_idx >= len(self._buffer) and not self._cursor.is_closed():
+            fetched_events = self._cursor.fetchmany(self._fetch_size)
+            if fetched_events:
+                logger.debug("Fetched %s more results.", len(fetched_events))
+                self._buffer.extend(fetched_events)
+                self._fetched_rowcount += len(fetched_events)
+                if self._fetched_rowcount == self._cursor.rowcount:
+                    logger.debug("Closing cursor due to all expected rows being fetched.")
+                    self._cursor.close()
+            else:
+                # We should never get to this point, but if we have then something unexpected caused the number of
+                # fetched rows to become exhausted before we fetch the expected "total" rowcount.  One thing that can
+                # cause this to happen is if the caller manually fetched any results without letting this
+                # LazySnowflakeResultList object do it.
+                logger.warning("Fetched fewer than expected results. Check for skipped events!")
+                self._cursor.close()
+
+        # Finally, perform the actual indexing.
+        return self._buffer[arg]
+
+    ######
+    # All remaining instance methods are passthrough methods to expose the underlying buffer without any customization.
+    ######
+
+    def __delitem__(self, i):
+        del self._buffer[i]
+
+    def __setitem__(self, i, v):
+        self._buffer[i] = v
+
+    def insert(self, i, v):
+        self._buffer.insert(i, v)
+
+    def __str__(self):
+        return str(self._buffer)
