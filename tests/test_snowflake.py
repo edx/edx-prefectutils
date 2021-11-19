@@ -4,6 +4,8 @@
 Tests for Snowflake utils in the `edx_prefectutils` package.
 """
 
+import json
+
 import mock
 import pytest
 from prefect.core import Flow
@@ -298,32 +300,69 @@ def test_export_snowflake_table_to_s3_with_exception(mock_sf_connection):
             sf_warehouse="test_warehouse",
             sf_storage_integration="test_storage_integration",
             s3_path="s3://edx-test/test/",
+            overwrite=False,
         )
 
 
 def test_export_snowflake_table_to_s3_overwrite(mock_sf_connection):  # noqa: F811
     mock_cursor = mock_sf_connection.cursor()
+    with mock.patch('edx_prefectutils.s3.delete_s3_directory.run') as mock_delete_s3_directory:
+        with Flow("test") as f:
+            snowflake.export_snowflake_table_to_s3(
+                sf_credentials={},
+                sf_database="test_database",
+                sf_schema="test_schema",
+                sf_table="test_table",
+                sf_role="test_role",
+                sf_warehouse="test_warehouse",
+                sf_storage_integration="test_storage_integration",
+                s3_path="s3://edx-test/test/",
+                overwrite=True,
+            )
+        state = f.run()
+        assert state.is_successful()
 
-    with Flow("test") as f:
-        snowflake.export_snowflake_table_to_s3(
-            sf_credentials={},
-            sf_database="test_database",
-            sf_schema="test_schema",
-            sf_table="test_table",
-            sf_role="test_role",
-            sf_warehouse="test_warehouse",
-            sf_storage_integration="test_storage_integration",
-            s3_path="s3://edx-test/test/",
-            overwrite=True,
+        mock_cursor.execute.assert_has_calls(
+            [
+                mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=True\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n    "),  # noqa
+            ]
         )
-    state = f.run()
-    assert state.is_successful()
 
-    mock_cursor.execute.assert_has_calls(
-        [
-            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=True\n            SINGLE=False\n    "),  # noqa
-        ]
-    )
+        mock_delete_s3_directory.assert_called_once_with('edx-test', 'test/test_database-test_schema-test_table/')
+
+
+def test_export_snowflake_table_to_s3_with_manifest(mock_sf_connection):  # noqa: F811
+    mock_cursor = mock_sf_connection.cursor()
+    mock_fetchall = mock.Mock()
+    s3_files = ['data_0_0_0.csv', 'data_0_0_1.csv']
+    mock_fetchall.return_value = [[file] for file in s3_files]
+    mock_cursor.fetchall = mock_fetchall
+
+    with mock.patch('prefect.tasks.aws.s3.S3Upload.run') as mock_s3_upload:
+        with Flow("test") as f:
+            snowflake.export_snowflake_table_to_s3(
+                sf_credentials={},
+                sf_database="test_database",
+                sf_schema="test_schema",
+                sf_table="test_table",
+                sf_role="test_role",
+                sf_warehouse="test_warehouse",
+                sf_storage_integration="test_storage_integration",
+                s3_path="s3://edx-test/test/",
+                overwrite=False,
+                generate_manifest=True,
+            )
+        state = f.run()
+        assert state.is_successful()
+
+        expected_manifest_content = {
+            "entries": [
+                {"url": "s3://edx-test/test/test_database-test_schema-test_table/" + s3_file, "mandatory": True} for s3_file in s3_files # noqa
+            ]
+        }
+        mock_s3_upload.assert_called_once_with(
+            json.dumps(expected_manifest_content), key="test/test_database-test_schema-test_table/manifest.json"
+        )
 
 
 def test_export_snowflake_table_to_s3_no_overwrite(mock_sf_connection):  # noqa: F811
@@ -346,7 +385,7 @@ def test_export_snowflake_table_to_s3_no_overwrite(mock_sf_connection):  # noqa:
 
     mock_cursor.execute.assert_has_calls(
         [
-            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n            SINGLE=False\n    "),  # noqa
+            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n    "),  # noqa
         ]
     )
 

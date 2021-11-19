@@ -9,6 +9,26 @@ from prefect.utilities.aws import get_boto_client
 
 
 @task
+def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dict = None):
+    """
+    Deletes all objects with the given S3 directory (prefix) from the given bucket.
+
+    Args:
+        bucket (str): The S3 bucket to delete the objects from.
+        prefix (str): The S3 prefix to delete the objects from.
+        credentials (dict): The AWS credentials to use.
+    """
+    s3_keys = list_object_keys_from_s3.run(bucket, prefix, credentials)
+    s3_client = get_boto_client('s3', credentials=credentials)
+    s3_client.delete_objects(
+        Bucket=bucket,
+        Delete={
+            'Objects': [{'Key': key} for key in s3_keys]
+        }
+    )
+
+
+@task
 def delete_object_from_s3(key: str = None, bucket: str = None, credentials: dict = None, ):
     """
     Delete an object from S3.
