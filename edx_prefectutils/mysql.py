@@ -17,13 +17,29 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     password = credentials['password']
     host = credentials['host']
 
-    connection = mysql.connector.connect(
-        user=user,
-        password=password,
-        host=host,
-        database=database,
-        autocommit=autocommit,
-    )
+    try:
+        connection = mysql.connector.connect(
+            user=user,
+            password=password,
+            host=host,
+            database=database,
+            autocommit=autocommit,
+        )
+    except mysql.connector.errors.ProgrammingError as err:
+        if 'Unknown database' in err.msg:
+            # Create the database if it doesn't exist.
+            connection = mysql.connector.connect(
+                user=user,
+                password=password,
+                host=host,
+                autocommit=autocommit,
+            )
+            cursor = connection.cursor()
+            cursor.execute(f'CREATE DATABASE IF NOT EXISTS {database}')
+            cursor.execute(f'USE {database}')
+            cursor.close()
+        else:
+            raise err
 
     return connection
 
