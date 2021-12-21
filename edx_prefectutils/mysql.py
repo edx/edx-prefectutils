@@ -1,10 +1,14 @@
 """
 Tasks for interacting with Aurora MySQL.
 """
+import os
+
 import mysql.connector
 from prefect import task
 from prefect.engine import signals
 from prefect.utilities.logging import get_logger
+
+from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
 
 
 def create_mysql_connection(credentials: dict, database: str, autocommit: bool = False):
@@ -39,6 +43,7 @@ def load_s3_data_to_mysql(
     ignore_num_lines: int = 0,
     overwrite: bool = False,
     overwrite_with_temp_table: bool = False,
+    use_manifest: bool = False,
 ):
 
     """
@@ -68,6 +73,8 @@ def load_s3_data_to_mysql(
               `DELETE`. The data would first be loaded into a new table followed by an atomic rename. Use this option
               if there are any schema changes or for expensive `DELETE` operations.
               IMPORTANT: Do not use this option for incrementally updated tables as any historical data would be lost.
+                Defaults to `False`.
+      use_manifest (bool, optional): Whether to use a manifest file to load data. Defaults to `False`.
     """
 
     def _drop_temp_tables(table, connection):
@@ -121,13 +128,20 @@ def load_s3_data_to_mysql(
             logger.debug("Deleting existing data for {table}".format(table=table))
             connection.cursor().execute(query)
 
+        if use_manifest:
+            s3_url = os.path.join(s3_url, MANIFEST_FILE_NAME)
+            prefix_or_manifest = "MANIFEST"
+        else:
+            prefix_or_manifest = "PREFIX"
+
         query = """
-            LOAD DATA FROM S3 PREFIX '{s3_url}'
+            LOAD DATA FROM S3 {prefix_or_manifest} '{s3_url}'
             INTO TABLE {table}
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
         """.format(
+            prefix_or_manifest=prefix_or_manifest,
             s3_url=s3_url,
             table=table if not overwrite_with_temp_table else table + '_temp',
             delimiter=field_delimiter,

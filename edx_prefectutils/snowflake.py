@@ -1,9 +1,11 @@
 """
 Utility methods and tasks for working with Snowflake from a Prefect flow.
 """
+import json
 import os
 from collections import namedtuple
 from typing import List, TypedDict
+from urllib.parse import urlparse
 
 import backoff
 import snowflake.connector
@@ -11,7 +13,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
 from prefect.engine import signals
+from prefect.tasks.aws import s3
 from prefect.utilities.logging import get_logger
+
+from edx_prefectutils import s3 as s3_utils
+
+MANIFEST_FILE_NAME = 'manifest.json'
 
 
 class SFCredentials(TypedDict, total=False):
@@ -423,6 +430,7 @@ def export_snowflake_table_to_s3(
     null_marker: str = 'NULL',
     overwrite: bool = True,
     single: bool = False,
+    generate_manifest: bool = False,
 ):
 
     """
@@ -449,6 +457,7 @@ def export_snowflake_table_to_s3(
       single (bool, optional): Whether to generate a single file in S3. Defaults to `FALSE`. The maximum file size
               for a single file defaults to 16MB, although that default can be updated by adding a MAX_FILE_SIZE
               copy option.
+      generate_manifest (bool, optional): Whether to generate a manifest file in S3. Defaults to `FALSE`.
     """
     logger = get_logger()
 
@@ -460,6 +469,16 @@ def export_snowflake_table_to_s3(
 
     table_name = qualified_table_name(sf_database, sf_schema, sf_table)
     export_path = os.path.join(s3_path, table_name.replace('.', '-').lower()) + '/'
+
+    parsed_path = urlparse(export_path)
+    export_bucket = parsed_path.netloc
+    export_prefix = parsed_path.path.lstrip('/')
+
+    # Snowflake's COPY INTO command's OVERWRITE option is not reliable, so we need to delete the data manually
+    if overwrite:
+        logger.info("Deleting existing data in S3 bucket: {bucket} with prefix: {prefix}".format(
+            bucket=export_bucket, prefix=export_prefix))
+        s3_utils.delete_s3_directory.run(export_bucket, export_prefix)
 
     query = """
         COPY INTO '{export_path}'
@@ -473,6 +492,7 @@ def export_snowflake_table_to_s3(
             )
             OVERWRITE={overwrite}
             SINGLE={single}
+            DETAILED_OUTPUT = TRUE
     """.format(
         export_path=export_path,
         table=table_name,
@@ -489,6 +509,24 @@ def export_snowflake_table_to_s3(
 
     try:
         cursor.execute(query)
+        if generate_manifest:
+            # With DETAILED_OUTPUT=TRUE, the COPY command returns rows for each file that gets created.
+            # The first column is the FILE_NAME
+            s3_file_names = [row[0] for row in cursor.fetchall()]
+            # Generate a manifest file in S3 which can be later used by LOAD DATA FROM S3 MANIFEST
+            # command to load the data into MySQL.
+            s3_file_paths = [os.path.join(export_path, s3_file_name) for s3_file_name in s3_file_names]
+            s3_manifest_file_prefix = os.path.join(export_prefix, MANIFEST_FILE_NAME)
+            manifest_file_content = {
+                "entries": [
+                    {"url": s3_file_path, "mandatory": True} for s3_file_path in s3_file_paths
+                ]
+            }
+
+            s3.S3Upload(bucket=export_bucket).run(
+                json.dumps(manifest_file_content),
+                key=s3_manifest_file_prefix
+            )
     except snowflake.connector.ProgrammingError as e:
         if 'Files already existing at the unload destination' in e.msg:
             logger.error("Files already exist at {destination}".format(destination=export_path))

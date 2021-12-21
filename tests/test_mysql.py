@@ -170,3 +170,26 @@ def test_table_creation_with_indexes(mock_mysql_connection):
             mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (user_id int,course_id varchar(255) NOT NULL,INDEX (user_id),INDEX (course_id),INDEX (user_id,course_id))\n    "), # noqa
         ]
     )
+
+
+def test_load_s3_data_to_mysql_with_manifest(mock_mysql_connection):
+    mock_cursor = mock_mysql_connection.cursor()
+    with Flow("test") as f:
+        utils_mysql.load_s3_data_to_mysql(
+            aurora_credentials={},
+            database="test_database",
+            table="test_table",
+            table_columns=[('id', 'int'), ('course_id', 'varchar(255) NOT NULL')],
+            s3_url="s3://edx-test/some/prefix/",
+            overwrite=True,
+            overwrite_with_temp_table=True,
+            use_manifest=True,
+        )
+
+    state = f.run()
+    assert state.is_successful()
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock.call("\n            LOAD DATA FROM S3 MANIFEST 's3://edx-test/some/prefix/manifest.json'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
+        ]
+    )
