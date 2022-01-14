@@ -19,13 +19,14 @@ def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dic
         credentials (dict): The AWS credentials to use.
     """
     s3_keys = list_object_keys_from_s3.run(bucket, prefix, credentials)
-    s3_client = get_boto_client('s3', credentials=credentials)
-    s3_client.delete_objects(
-        Bucket=bucket,
-        Delete={
-            'Objects': [{'Key': key} for key in s3_keys]
-        }
-    )
+    if s3_keys:
+        s3_client = get_boto_client('s3', credentials=credentials)
+        s3_client.delete_objects(
+            Bucket=bucket,
+            Delete={
+                'Objects': [{'Key': key} for key in s3_keys]
+            }
+        )
 
 
 @task
