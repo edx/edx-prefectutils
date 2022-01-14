@@ -21,6 +21,8 @@ def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dic
     s3_keys = list_object_keys_from_s3.run(bucket, prefix, credentials)
     if s3_keys:
         s3_client = get_boto_client('s3', credentials=credentials)
+        logger = prefect.context.get("logger")
+        logger.info("Deleting S3 keys: {}".format(s3_keys))
         s3_client.delete_objects(
             Bucket=bucket,
             Delete={
