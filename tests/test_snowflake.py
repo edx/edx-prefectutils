@@ -324,7 +324,7 @@ def test_export_snowflake_table_to_s3_overwrite(mock_sf_connection):  # noqa: F8
 
         mock_cursor.execute.assert_has_calls(
             [
-                mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=True\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n    "),  # noqa
+                mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=True\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n            MAX_FILE_SIZE = 104857600\n    "),  # noqa
             ]
         )
 
@@ -385,7 +385,7 @@ def test_export_snowflake_table_to_s3_no_overwrite(mock_sf_connection):  # noqa:
 
     mock_cursor.execute.assert_has_calls(
         [
-            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n    "),  # noqa
+            mock.call("\n        COPY INTO 's3://edx-test/test/test_database-test_schema-test_table/'\n            FROM test_database.test_schema.test_table\n            STORAGE_INTEGRATION = test_storage_integration\n            FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE\n            FIELD_DELIMITER = ',' FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'\n            ESCAPE_UNENCLOSED_FIELD = '\\\\'\n            NULL_IF = ( 'NULL' )\n            COMPRESSION = NONE\n            )\n            OVERWRITE=False\n            SINGLE=False\n            DETAILED_OUTPUT = TRUE\n            MAX_FILE_SIZE = 104857600\n    "),  # noqa
         ]
     )
 

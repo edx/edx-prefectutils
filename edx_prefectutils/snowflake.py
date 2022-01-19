@@ -19,6 +19,7 @@ from prefect.utilities.logging import get_logger
 from edx_prefectutils import s3 as s3_utils
 
 MANIFEST_FILE_NAME = 'manifest.json'
+EXPORT_MAX_FILESIZE = 104857600
 
 
 class SFCredentials(TypedDict, total=False):
@@ -493,6 +494,7 @@ def export_snowflake_table_to_s3(
             OVERWRITE={overwrite}
             SINGLE={single}
             DETAILED_OUTPUT = TRUE
+            MAX_FILE_SIZE = {max_file_size}
     """.format(
         export_path=export_path,
         table=table_name,
@@ -502,7 +504,8 @@ def export_snowflake_table_to_s3(
         escape_unenclosed_field=escape_unenclosed_field,
         null_marker=null_marker,
         overwrite=overwrite,
-        single=single
+        single=single,
+        max_file_size=EXPORT_MAX_FILESIZE,
     )
     logger.info(query)
     cursor = sf_connection.cursor()
