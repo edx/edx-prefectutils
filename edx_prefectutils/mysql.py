@@ -44,6 +44,59 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
+def _set_null_clause(null_marker: str, table_columns: list):
+
+    """
+    Provides a set clause which can turn null marker strings into actual nulls needed by mysql.
+    Unfortunately if you use delimited fields mysql demands NULL does not have delimiters
+    around it. Snowflake cannot handle the idea of null being turned into a string that is
+    not delimited in a generally delimited context and other sources may have similar problems.
+
+    Args:
+      null_marker (str): expected null marker string in the file
+              If provided, this string will be transformed into Null on load in the set.
+              If None, the set clause is not needed and will return ''.
+              Note that '' is a valid null marker and a clause will be generated.
+              Example: 'NULL'
+      table_columns (list): List of tuples specifying table schema.
+              Example: `[('id', 'int'), ('course_id', 'varchar(255) NOT NULL')]`
+              This is the same set of columns passed on from load_s3_data_to_mysql
+              If no table columns are nullable no set clause is needed after all
+              and this function will return ''.
+
+    Returns: '' or a filled out set clause which will turn the string
+              Example clause: (foo, @bar, @baz)
+              SET
+              bar = NULLIF(@bar, 'NULL')
+              baz = NULLIF(@baz, 'NULL')
+
+    """
+
+    if null_marker is None:
+        return ''
+
+    names = []
+    sets = []
+
+    for (name, definition) in table_columns:
+        if "NOT NULL" in definition:
+            names.append(name)
+        else:
+            names.append("@{name}".format(name=name))
+            sets.append("{name} = NULLIF(@{name}, '{null_marker}')".format(
+                        name=name, null_marker=null_marker))
+
+    if len(sets) == 0:
+        return ''
+
+    name_clause = "({name_join})".format(name_join=','.join(names))
+
+    return """{name_clause}
+    SET
+    {set_clauses}
+    """.format(name_clause=name_clause, set_clauses=',\n    '.join(sets))
+
+
 @task
 def load_s3_data_to_mysql(
     aurora_credentials: dict,
@@ -60,6 +113,7 @@ def load_s3_data_to_mysql(
     overwrite: bool = False,
     overwrite_with_temp_table: bool = False,
     use_manifest: bool = False,
+    null_marker: str = None,
 ):
 
     """
@@ -91,6 +145,8 @@ def load_s3_data_to_mysql(
               IMPORTANT: Do not use this option for incrementally updated tables as any historical data would be lost.
                 Defaults to `False`.
       use_manifest (bool, optional): Whether to use a manifest file to load data. Defaults to `False`.
+      null_marker (str, optional): If provided, this string will be transformed into Null on load during set
+              Example: 'NULL'
     """
 
     def _drop_temp_tables(table, connection):
@@ -150,12 +206,15 @@ def load_s3_data_to_mysql(
         else:
             prefix_or_manifest = "PREFIX"
 
+        set_clause = _set_null_clause(null_marker, table_columns)
+
         query = """
             LOAD DATA FROM S3 {prefix_or_manifest} '{s3_url}'
             INTO TABLE {table}
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
+            {set_clause}
         """.format(
             prefix_or_manifest=prefix_or_manifest,
             s3_url=s3_url,
@@ -164,6 +223,7 @@ def load_s3_data_to_mysql(
             enclosed_by=enclosed_by,
             escaped_by=escaped_by,
             ignore_lines=ignore_num_lines,
+            set_clause=set_clause,
         )
         connection.cursor().execute(query)
 
