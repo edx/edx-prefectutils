@@ -426,9 +426,9 @@ def export_snowflake_table_to_s3(
     sf_storage_integration: str,
     s3_path: str,
     field_delimiter: str = ',',
-    enclosed_by: str = 'NONE',
-    escape_unenclosed_field: str = '\\\\',
-    null_marker: str = 'NULL',
+    enclosed_by: str = None,
+    escape_unenclosed_field: str = None,
+    null_marker: str = None,
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
@@ -481,14 +481,22 @@ def export_snowflake_table_to_s3(
             bucket=export_bucket, prefix=export_prefix))
         s3_utils.delete_s3_directory.run(export_bucket, export_prefix)
 
+    escape_clause = '' if escape_unenclosed_field is None \
+        else "ESCAPE_UNENCLOSED_FIELD = '{escape_unenclosed_field}'".format(
+            escape_unenclosed_field=escape_unenclosed_field)
+    enclosure_clause = '' if enclosed_by is None \
+        else "FIELD_OPTIONALLY_ENCLOSED_BY = '{enclosed_by}'".format(enclosed_by=enclosed_by)
+    null_if_clause = '' if null_marker is None \
+        else "NULL_IF = ( '{null_marker}' )".format(null_marker=null_marker)
+
     query = """
         COPY INTO '{export_path}'
             FROM {table}
             STORAGE_INTEGRATION = {storage_integration}
             FILE_FORMAT = ( TYPE = CSV EMPTY_FIELD_AS_NULL = FALSE
-            FIELD_DELIMITER = '{field_delimiter}' FIELD_OPTIONALLY_ENCLOSED_BY = '{enclosed_by}'
-            ESCAPE_UNENCLOSED_FIELD = '{escape_unenclosed_field}'
-            NULL_IF = ( '{null_marker}' )
+            FIELD_DELIMITER = '{field_delimiter}' {enclosure_clause}
+            {escape_clause}
+            {null_if_clause}
             COMPRESSION = NONE
             )
             OVERWRITE={overwrite}
@@ -500,9 +508,9 @@ def export_snowflake_table_to_s3(
         table=table_name,
         storage_integration=sf_storage_integration,
         field_delimiter=field_delimiter,
-        enclosed_by=enclosed_by,
-        escape_unenclosed_field=escape_unenclosed_field,
-        null_marker=null_marker,
+        enclosure_clause=enclosure_clause,
+        escape_clause=escape_clause,
+        null_if_clause=null_if_clause,
         overwrite=overwrite,
         single=single,
         max_file_size=EXPORT_MAX_FILESIZE,
