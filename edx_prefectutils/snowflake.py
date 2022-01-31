@@ -450,10 +450,13 @@ def export_snowflake_table_to_s3(
               configured in Terraform.
       s3_path (str): S3 base path used to unload the table, this will be appended with the qualified table name.
       field_delimiter (str, optional): The character to use for separating fields in the output file. Defaults to `,`.
-      enclosed_by (str, optional): Character used to enclose strings. Defaults to `NONE`
+      enclosed_by (str, optional): Character used to enclose strings or None to use snowflake default
+              'NONE' is a specially allowed value which emits NONE to snowflake, meaning no enclosure
       escape_unenclosed_field (str, optional): Single character string used as the escape character for unenclosed
-              field values only. Defaults to snowflake default `\\`.
-      null_marker (str, optional): String used to convert SQL NULL. Defaults to `NULL`.
+              field values only. Defaults to None which omits this clause letting snowflake use its default \\.
+              'NONE' is a specially allowed value which emits NONE to snowflake, meaning no escaping ever.
+      null_marker (str, optional): String used to convert SQL NULL. Defaults to None which lets snowflake
+              use its default '\\N'
       overwrite (bool, optional): Whether to overwrite existing data in S3. Defaults to `TRUE`.
       single (bool, optional): Whether to generate a single file in S3. Defaults to `FALSE`. The maximum file size
               for a single file defaults to 16MB, although that default can be updated by adding a MAX_FILE_SIZE
@@ -482,9 +485,11 @@ def export_snowflake_table_to_s3(
         s3_utils.delete_s3_directory.run(export_bucket, export_prefix)
 
     escape_clause = '' if escape_unenclosed_field is None \
+        else "ESCAPE_UNENCLOSED_FIELD = NONE" if escape_unenclosed_field == 'NONE' \
         else "ESCAPE_UNENCLOSED_FIELD = '{escape_unenclosed_field}'".format(
             escape_unenclosed_field=escape_unenclosed_field)
     enclosure_clause = '' if enclosed_by is None \
+        else "FIELD_OPTIONALLY_ENCLOSED_BY = NONE" if enclosed_by == 'NONE' \
         else "FIELD_OPTIONALLY_ENCLOSED_BY = '{enclosed_by}'".format(enclosed_by=enclosed_by)
     null_if_clause = '' if null_marker is None \
         else "NULL_IF = ( '{null_marker}' )".format(null_marker=null_marker)
