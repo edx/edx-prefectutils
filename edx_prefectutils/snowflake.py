@@ -539,6 +539,12 @@ def export_snowflake_table_to_s3(
                 ]
             }
 
+            logger.info(
+                'Uploading manifest file to s3, containing urls %(urls)s',
+                {
+                    "urls": s3_file_paths,
+                }
+            )
             s3.S3Upload(bucket=export_bucket).run(
                 json.dumps(manifest_file_content),
                 key=s3_manifest_file_prefix
