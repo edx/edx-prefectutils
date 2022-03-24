@@ -15,17 +15,17 @@ azure-core==1.16.0
 azure-storage-blob==12.8.1
     # via snowflake-connector-python
 backoff==1.11.0
-    # via -r requirements/base.in
+    # via -r base.in
 bcrypt==3.2.0
     # via paramiko
 boto3==1.17.110
     # via
-    #   -r requirements/base.in
+    #   -r base.in
     #   prefect
     #   snowflake-connector-python
 botocore==1.20.110
     # via
-    #   -r requirements/base.in
+    #   -r base.in
     #   boto3
     #   s3transfer
 cachetools==4.2.2
@@ -47,7 +47,7 @@ chardet==4.0.0
 charset-normalizer==2.0.1
     # via requests
 ciso8601==2.1.3
-    # via -r requirements/base.in
+    # via -r base.in
 click==7.1.2
     # via
     #   distributed
@@ -65,16 +65,16 @@ cryptography==3.4.7
     #   paramiko
     #   pyopenssl
     #   snowflake-connector-python
-dask==2021.7.0
+dask==2021.10.0
     # via
     #   distributed
     #   prefect
-distributed==2021.7.0
+distributed==2021.10.0
     # via prefect
 docker==5.0.0
     # via prefect
 edx-opaque-keys==2.2.2
-    # via -r requirements/base.in
+    # via -r base.in
 fsspec==2021.7.0
     # via dask
 google-api-core[grpc]==1.31.0
@@ -119,15 +119,17 @@ grpcio==1.38.1
 heapdict==1.0.1
     # via zict
 hvac==0.11.0
-    # via -r requirements/base.in
+    # via -r base.in
 idna==2.10
     # via
     #   requests
     #   snowflake-connector-python
 importlib-metadata==1.7.0
-    # via -r requirements/base.in
+    # via -r base.in
 isodate==0.6.0
     # via msrest
+jinja2==3.1.0
+    # via distributed
 jmespath==0.10.0
     # via
     #   boto3
@@ -136,6 +138,8 @@ libcst==0.3.19
     # via google-cloud-secret-manager
 locket==0.2.1
     # via partd
+markupsafe==2.1.1
+    # via jinja2
 marshmallow==3.12.2
     # via
     #   marshmallow-oneofschema
@@ -153,7 +157,7 @@ mypy-extensions==0.4.3
     #   prefect
     #   typing-inspect
 mysql-connector-python==8.0.25
-    # via -r requirements/base.in
+    # via -r base.in
 natsort==7.1.1
     # via croniter
 oauthlib==3.1.1
@@ -162,10 +166,11 @@ oscrypto==1.2.1
     # via snowflake-connector-python
 packaging==21.0
     # via
+    #   dask
     #   google-api-core
     #   google-cloud-secret-manager
 paramiko==2.7.2
-    # via -r requirements/base.in
+    # via -r base.in
 partd==1.2.0
     # via dask
 pbr==5.6.0
@@ -173,7 +178,7 @@ pbr==5.6.0
 pendulum==2.1.2
     # via prefect
 prefect[aws,google,snowflake,viz]==0.15.1
-    # via -r requirements/base.in
+    # via -r base.in
 proto-plus==1.19.0
     # via google-cloud-secret-manager
 protobuf==3.17.3
