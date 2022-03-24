@@ -1,16 +1,16 @@
 name: Publish package to PyPi
 
 on:
-  # Triggers the workflow when release is published
-  release:
-    types: [published]
+  push:
+    tags:
+      - '*'
 
 jobs:
     push:
       runs-on: ubuntu-20.04
       steps:
         - name: Checkout
-          uses: actions/checkout@v1
+          uses: actions/checkout@v2
         - name: setup python
           uses: actions/setup-python@v2
           with:
