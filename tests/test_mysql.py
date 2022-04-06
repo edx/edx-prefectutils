@@ -113,7 +113,7 @@ def test_load_s3_data_to_mysql(mock_mysql_connection):
             mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (id int,course_id varchar(255) NOT NULL)\n    "), # noqa
             mock.call("SELECT 1 FROM test_table where course_id='edX/Open_DemoX/edx_demo_course' LIMIT 1"), # noqa
             mock.call("DELETE FROM test_table where course_id='edX/Open_DemoX/edx_demo_course'"), # noqa
-            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            CHARACTER SET UTF8\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n        "), # noqa
         ]
     )
 
@@ -141,7 +141,7 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
             mock.call("DROP TABLE IF EXISTS test_table_old"),
             mock.call("DROP TABLE IF EXISTS test_table_temp"),
             mock.call("CREATE TABLE test_table_temp (id int,course_id varchar(255) NOT NULL)"),
-            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table_temp\n            CHARACTER SET UTF8\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
             mock.call("RENAME TABLE test_table to test_table_old, test_table_temp to test_table"),
             mock.call("DROP TABLE IF EXISTS test_table_old"),
             mock.call("DROP TABLE IF EXISTS test_table_temp"),
@@ -190,6 +190,6 @@ def test_load_s3_data_to_mysql_with_manifest(mock_mysql_connection):
     assert state.is_successful()
     mock_cursor.execute.assert_has_calls(
         [
-            mock.call("\n            LOAD DATA FROM S3 MANIFEST 's3://edx-test/some/prefix/manifest.json'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 MANIFEST 's3://edx-test/some/prefix/manifest.json'\n            INTO TABLE test_table_temp\n            CHARACTER SET UTF8\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
         ]
     )
