@@ -153,7 +153,6 @@ def load_s3_data_to_mysql(
         query = """
             LOAD DATA FROM S3 {prefix_or_manifest} '{s3_url}'
             INTO TABLE {table}
-            CHARACTER SET UTF8MB4
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
