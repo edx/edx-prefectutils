@@ -429,6 +429,7 @@ def export_snowflake_table_to_s3(
     enclosed_by: str = None,
     escape_unenclosed_field: str = None,
     null_marker: str = None,
+    binary_format: str = None,
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
@@ -457,6 +458,7 @@ def export_snowflake_table_to_s3(
               'NONE' is a specially allowed value which emits NONE to snowflake, meaning no escaping ever.
       null_marker (str, optional): String used to convert SQL NULL. Defaults to None which lets snowflake
               use its default '\\N'
+      binary_format (str, optional): String to define encoding for binary output
       overwrite (bool, optional): Whether to overwrite existing data in S3. Defaults to `TRUE`.
       single (bool, optional): Whether to generate a single file in S3. Defaults to `FALSE`. The maximum file size
               for a single file defaults to 16MB, although that default can be updated by adding a MAX_FILE_SIZE
@@ -493,6 +495,9 @@ def export_snowflake_table_to_s3(
         else "FIELD_OPTIONALLY_ENCLOSED_BY = '{enclosed_by}'".format(enclosed_by=enclosed_by)
     null_if_clause = '' if null_marker is None \
         else "NULL_IF = ( '{null_marker}' )".format(null_marker=null_marker)
+    binary_format_clause = '' if binary_format is None \
+        else "BINARY_FORMAT = {binary_format}".format(
+            binary_format=binary_format)
 
     query = """
         COPY INTO '{export_path}'
@@ -502,6 +507,7 @@ def export_snowflake_table_to_s3(
             FIELD_DELIMITER = '{field_delimiter}' {enclosure_clause}
             {escape_clause}
             {null_if_clause}
+            {binary_format_clause}
             COMPRESSION = NONE
             )
             OVERWRITE={overwrite}
@@ -516,6 +522,7 @@ def export_snowflake_table_to_s3(
         enclosure_clause=enclosure_clause,
         escape_clause=escape_clause,
         null_if_clause=null_if_clause,
+        binary_format_clause=binary_format_clause,
         overwrite=overwrite,
         single=single,
         max_file_size=EXPORT_MAX_FILESIZE,
