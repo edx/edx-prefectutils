@@ -430,6 +430,7 @@ def export_snowflake_table_to_s3(
     escape_unenclosed_field: str = None,
     null_marker: str = None,
     binary_format: str = None,
+    encoding: str = None,
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
@@ -459,6 +460,7 @@ def export_snowflake_table_to_s3(
       null_marker (str, optional): String used to convert SQL NULL. Defaults to None which lets snowflake
               use its default '\\N'
       binary_format (str, optional): String to define encoding for binary output
+      encoding (str, optional): String to define file encoding
       overwrite (bool, optional): Whether to overwrite existing data in S3. Defaults to `TRUE`.
       single (bool, optional): Whether to generate a single file in S3. Defaults to `FALSE`. The maximum file size
               for a single file defaults to 16MB, although that default can be updated by adding a MAX_FILE_SIZE
@@ -498,6 +500,9 @@ def export_snowflake_table_to_s3(
     binary_format_clause = '' if binary_format is None \
         else "BINARY_FORMAT = {binary_format}".format(
             binary_format=binary_format)
+    encoding_clause = '' if encoding is None \
+        else "ENCODING = {encoding}".format(
+            encoding=encoding)
 
     query = """
         COPY INTO '{export_path}'
@@ -509,6 +514,7 @@ def export_snowflake_table_to_s3(
             {null_if_clause}
             {binary_format_clause}
             COMPRESSION = NONE
+            {encoding_clause}
             )
             OVERWRITE={overwrite}
             SINGLE={single}
@@ -523,6 +529,7 @@ def export_snowflake_table_to_s3(
         escape_clause=escape_clause,
         null_if_clause=null_if_clause,
         binary_format_clause=binary_format_clause,
+        encoding_clause=encoding_clause,
         overwrite=overwrite,
         single=single,
         max_file_size=EXPORT_MAX_FILESIZE,
