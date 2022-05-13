@@ -26,7 +26,10 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
     parsed_url = urlparse(url)
     bucket = gcs_client.get_bucket(parsed_url.netloc)
     prefix = parsed_url.path.lstrip("/")
-    blobs = bucket.list_blobs(prefix=prefix)
+    # The list function is needed because bucket.list_blobs returns an
+    # HTTPIterator object, which does not implement __len__.
+    # But bucket.delete_blobs expects an Iterable with __len__.
+    blobs = list(bucket.list_blobs(prefix=prefix))
     bucket.delete_blobs(blobs)
     return blobs
 
