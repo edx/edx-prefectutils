@@ -83,7 +83,17 @@ def get_paypal_filename(date, prefix, connection, remote_path):
     return None
 
 
-@task(max_retries=3, retry_delay=datetime.timedelta(seconds=40))
+class RemoteFileNotFoundError(Exception):
+    pass
+
+
+# Retry every 10 minutes for 5 hours! This should hopefully handle situations when the report is abnormally late.
+@task(
+    max_retries=30,
+    retry_delay=datetime.timedelta(minutes=10),
+    # Skip this retry filter until we upgrade to prefect 1.2.x since it is a new feature.
+    # retry_on=RemoteFileNotFoundError,
+)
 def fetch_paypal_report(
         date: str,
         paypal_credentials: dict,
@@ -129,6 +139,6 @@ def fetch_paypal_report(
             formatted_report = format_paypal_report(sftp_connection, remote_filename, date)
             return date, formatted_report
         else:
-            raise Exception("Remote File Not found for date: {0}".format(date))
+            raise RemoteFileNotFoundError("Remote File Not found for date: {0}".format(date))
     finally:
         sftp_connection.close()
