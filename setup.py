@@ -73,7 +73,7 @@ test_requirements = ['pytest>=3', ]
 setup(
     author="Julia Eskew",
     author_email='jeskew@edx.org',
-    python_requires='>=3.5',
+    python_requires='>=3.8',
     license='AGPL',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
