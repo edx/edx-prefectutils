@@ -4,7 +4,7 @@ botocore
 ciso8601
 edx-opaque-keys
 hvac
-importlib-metadata==4.4  # Pinned for tox and virtualenv
+importlib-metadata<2  # Pinned for tox and virtualenv
 mysql-connector-python
 paramiko
 prefect[aws,google,snowflake,viz]==2.7.8
