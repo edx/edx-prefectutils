@@ -8,9 +8,11 @@ import json
 
 import mock
 import pytest
-from prefect.core import Flow
-from prefect.engine import signals
-from prefect.utilities.debug import raise_on_exception
+from prefect import flow
+from prefect.states import Cancelled,Failed
+#from prefect.engine import signals
+#from prefect.utilities.debug import raise_on_exception
+from prefect.exceptions import exception_traceback
 from pytest_mock import mocker  # noqa: F401
 from snowflake.connector import ProgrammingError
 
@@ -128,7 +130,7 @@ def test_load_json_objects_to_snowflake_error_on_table_exist_check(mock_sf_conne
             gcs_url="gs://test-location",
             date="2020-01-01",
         )
-    with raise_on_exception():
+    with exception_traceback():
         with pytest.raises(ProgrammingError):
             f.run()
 
@@ -209,14 +211,14 @@ def test_load_json_objects_to_snowflake_table_general_exception(mock_sf_connecti
             date="2020-01-01",
             overwrite=True
         )
-    with raise_on_exception():
+    with exception_traceback():
         with pytest.raises(Exception):
             f.run()
 
 
 def test_load_s3_data_to_snowflake_missing_parameters():
     task = snowflake.load_s3_data_to_snowflake
-    with pytest.raises(signals.FAIL, match="Either `file` or `pattern` must be specified to run this task."):
+    with pytest.raises(Failed, match="Either `file` or `pattern` must be specified to run this task."):
         task.run(
             date="2020-01-01",
             date_property='date',
@@ -268,7 +270,7 @@ def test_load_s3_data_to_snowflake_data_exists_no_overwrite(mock_sf_connection):
     mock_cursor.fetchone = mock_fetchone
 
     task = snowflake.load_s3_data_to_snowflake
-    with pytest.raises(signals.SKIP, match="Skipping task as data for the date exists and no overwrite was provided."):
+    with pytest.raises(Cancelled, match="Skipping task as data for the date exists and no overwrite was provided."):
         task.run(
             date="2020-01-01",
             date_property='date',
@@ -290,7 +292,7 @@ def test_export_snowflake_table_to_s3_with_exception(mock_sf_connection):
     mock_cursor.execute = mock_execute
 
     task = snowflake.export_snowflake_table_to_s3
-    with pytest.raises(signals.FAIL, match="Files already exist. Use overwrite option to force unloading."):
+    with pytest.raises(Failed, match="Files already exist. Use overwrite option to force unloading."):
         task.run(
             sf_credentials={},
             sf_database="test_database",

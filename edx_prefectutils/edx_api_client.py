@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import backoff
 import requests
-from prefect.utilities.logging import get_logger
+from prefect import get_run_logger
 from requests.auth import AuthBase
 
 DEFAULT_RETRY_STATUS_CODES = (
@@ -57,7 +57,7 @@ class EdxApiClient(object):
 
     def ensure_oauth_access_token(self):
         """Retrieves OAuth 2.0 access token using the client credentials grant and stores it in the request session."""
-        logger = get_logger()
+        logger = get_run_logger()
         now = datetime.utcnow()
         if self._expires_at is None or now >= self._expires_at:
             logger.info('Token is expired or missing, requesting a new one.')
@@ -203,7 +203,7 @@ class SuppliedAuth(AuthBase):
 
 def log_response_hook(response, *args, **kwargs):  # pylint: disable=unused-argument
     """Log summary information about every request made."""
-    logger = get_logger()
+    logger = get_run_logger()
     logger.info(
         "[{}] [{}] [{}] {}".format(
             response.request.method, response.status_code, response.elapsed.total_seconds(), response.url

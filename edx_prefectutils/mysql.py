@@ -3,10 +3,10 @@ Tasks for interacting with Aurora MySQL.
 """
 import os
 
-import mysql.connector
+import pymysql
 from prefect import task
-from prefect.engine import signals
-from prefect.utilities.logging import get_logger
+from prefect.states import Cancelled
+from prefect import get_run_logger
 
 from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
 
@@ -18,14 +18,14 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     host = credentials['host']
 
     try:
-        connection = mysql.connector.connect(
+        connection = pymysql.connect(
             user=user,
             password=password,
             host=host,
             database=database,
             autocommit=autocommit,
         )
-    except mysql.connector.errors.ProgrammingError as err:
+    except pymysql.ProgrammingError as err:
         if 'Unknown database' in err.msg:
             # Create the database if it doesn't exist.
             connection = mysql.connector.connect(
@@ -98,7 +98,7 @@ def load_s3_data_to_mysql(
             query = "DROP TABLE IF EXISTS {table}".format(table=table)
             connection.cursor().execute(query)
 
-    logger = get_logger()
+    logger = get_run_logger()
 
     connection = create_mysql_connection(aurora_credentials, database)
 
@@ -130,7 +130,7 @@ def load_s3_data_to_mysql(
     row = cursor.fetchone()
 
     if row and not overwrite:
-        raise signals.SKIP('Skipping task as data already exists in the dest. table and no overwrite was provided.')
+        raise Cancelled('Skipping task as data already exists in the dest. table and no overwrite was provided.')
 
     # Create a temp table for loading data
     if overwrite and overwrite_with_temp_table:

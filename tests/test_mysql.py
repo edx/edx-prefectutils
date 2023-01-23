@@ -1,7 +1,7 @@
 import mock
 import pytest
-from prefect.core import Flow
-from prefect.engine import signals
+from prefect import flow
+from prefect.states import Cancelled
 from pytest_mock import mocker  # noqa: F401
 
 from edx_prefectutils import mysql as utils_mysql
@@ -25,7 +25,7 @@ def test_load_s3_data_to_mysql_no_overwrite_existing_data(mock_mysql_connection)
 
     task = utils_mysql.load_s3_data_to_mysql
     with pytest.raises(
-        signals.SKIP,
+        Cancelled,
         match="Skipping task as data already exists in the dest. table and no overwrite was provided."
     ):
         task.run(

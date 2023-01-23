@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 import prefect
 import requests
 from prefect import task
-from prefect.tasks.aws import s3
+from prefect_aws.s3 import s3_upload
+#from prefect.tasks.aws import s3
 
 
 @task
@@ -52,9 +53,10 @@ def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str):
     filename, sitemap_json = sitemap_data
     date_path = f'{prefect.context.today}/{filename}.json'
     s3_key = join(s3_path, date_path)
-    s3.S3Upload(bucket=s3_bucket).run(
-        sitemap_json,
-        key=s3_key,
+    s3_upload(
+        sitemap_json
+        ,bucket=s3_bucket
+        ,key=s3_key
     )
 
     return date_path

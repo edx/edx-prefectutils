@@ -4,8 +4,10 @@ S3 related common methods and tasks for Prefect
 
 import prefect
 from prefect import task
-from prefect.tasks.aws import s3
-from prefect.utilities.aws import get_boto_client
+#from prefect.tasks.aws import s3
+from prefect_aws.s3 import s3_upload
+#from prefect.utilities.aws import get_boto_client
+import boto3
 
 
 @task
@@ -20,7 +22,7 @@ def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dic
     """
     s3_keys = list_object_keys_from_s3.run(bucket, prefix, credentials)
     if s3_keys:
-        s3_client = get_boto_client('s3', credentials=credentials)
+        s3_client = boto3.client('s3', credentials)
         logger = prefect.context.get("logger")
         logger.info("Deleting S3 keys: {}".format(s3_keys))
         s3_client.delete_objects(
@@ -40,7 +42,7 @@ def delete_object_from_s3(key: str = None, bucket: str = None, credentials: dict
     bucket (str): Name of the S3 bucket to delete from.
     credentials (dict): AWS credentials, if None boto will fall back the usual methods of resolution.
     """
-    s3_client = get_boto_client("s3", credentials=credentials)
+    s3_client = boto3.client('s3', credentials)
     s3_client.delete_object(Bucket=bucket, Key=key)
 
 
@@ -53,8 +55,8 @@ def list_object_keys_from_s3(bucket: str = None, prefix: str = '', credentials: 
     bucket (str): Name of the S3 bucket to search from.
     credentials (dict): AWS credentials, if None boto will fall back the usual methods of resolution.
     """
-    s3_client = get_boto_client("s3", credentials=credentials)
-    found_objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    s3_client = boto3.client('s3', credentials)
+    found_objects = s3_client.list_objects(Bucket=bucket, Prefix=prefix)
 
     logger = prefect.context.get("logger")
     logger.info(found_objects)
@@ -81,9 +83,10 @@ def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str):
     s3_key = s3_path + date_path
     logger.info("Writing report to S3 for {} to {}".format(date, s3_key))
 
-    s3.S3Upload(bucket=s3_bucket).run(
-        report_str,
-        key=s3_key
+    s3_upload(
+        report_str
+        ,bucket=s3_bucket
+        ,key=s3_key
     )
 
     return date_path

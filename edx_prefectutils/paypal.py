@@ -89,8 +89,8 @@ class RemoteFileNotFoundError(Exception):
 
 # Retry every 10 minutes for 5 hours! This should hopefully handle situations when the report is abnormally late.
 @task(
-    max_retries=30,
-    retry_delay=datetime.timedelta(minutes=10),
+    retries=30,
+    retry_delay_seconds=datetime.timedelta(minutes=10),
     # Skip this retry filter until we upgrade to prefect 1.2.x since it is a new feature.
     # retry_on=RemoteFileNotFoundError,
 )

@@ -9,7 +9,7 @@ import backoff
 import google.api_core.exceptions
 from google.cloud import bigquery
 from prefect import task
-from prefect.utilities.gcp import get_bigquery_client, get_storage_client
+from prefect_gcp.credentials import GcpCredentials
 
 
 @task
@@ -22,7 +22,7 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
       url (str): Pointer to a GCS prefix containing one or more objects to delete.
       project (str): Name of the project which contains the target objects.
     """
-    gcs_client = get_storage_client(credentials=gcp_credentials, project=project)
+    gcs_client = GcpCredentials(gcp_credentials, project).get_cloud_storage_client()
     parsed_url = urlparse(url)
     bucket = gcs_client.get_bucket(parsed_url.netloc)
     prefix = parsed_url.path.lstrip("/")
@@ -48,7 +48,7 @@ def extract_ga_table(project: str, gcp_credentials: dict, dataset: str, date: st
     base_extraction_path = os.path.join(output_root, dataset, date)
     destination_uri = os.path.join(base_extraction_path, dest_filename)
 
-    client = get_bigquery_client(credentials=gcp_credentials, project=project)
+    client = GcpCredentials(gcp_credentials, project).get_bigquery_client()
 
     dataset = client.dataset(dataset, project=project)
     table = dataset.table(table_name)

@@ -4,7 +4,7 @@
 Tests for BigQuery utils in the `edx_prefectutils` package.
 """
 
-from prefect.core import Flow
+from prefect import flow
 from pytest_mock import mocker  # noqa: F401
 
 from edx_prefectutils import bigquery

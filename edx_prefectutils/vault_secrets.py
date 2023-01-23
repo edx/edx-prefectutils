@@ -28,7 +28,6 @@ secret in Prefect flows:
         load_data_into_snowflake(sf_credentials)
 """
 import hvac
-from prefect.tasks.secrets import SecretBase
 
 # This is a standardized k8s path to always find the service account JWT token.
 SERVICE_ACCOUNT_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -43,7 +42,7 @@ VAULT_ROLE = "prefect"
 EXTERNAL_VAULT_BASE_URL = "https://vault.analytics.edx.org"
 
 
-class VaultSecretBase(SecretBase):
+class VaultSecretBase():
     """
     A base Secret task that establishes the vault client which can be used by
     extending classes to fetch secrets from Vault.
