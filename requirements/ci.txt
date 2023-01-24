@@ -16,7 +16,7 @@ codecov==2.1.12
     # via -r requirements/ci.in
 colorama==0.4.6
     # via tox
-coverage==7.0.5
+coverage==7.1.0
     # via codecov
 distlib==0.3.6
     # via virtualenv
@@ -44,7 +44,7 @@ tomli==2.0.1
     # via
     #   pyproject-api
     #   tox
-tox==4.3.5
+tox==4.4.2
     # via
     #   -r requirements/ci.in
     #   tox-battery
