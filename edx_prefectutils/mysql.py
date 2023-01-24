@@ -3,7 +3,7 @@ Tasks for interacting with Aurora MySQL.
 """
 import os
 
-import mysql.connector
+import pymysql
 from prefect import task
 from prefect.engine import signals
 from prefect.utilities.logging import get_logger
@@ -18,17 +18,17 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     host = credentials['host']
 
     try:
-        connection = mysql.connector.connect(
+        connection = pymysql.connect(
             user=user,
             password=password,
             host=host,
             database=database,
             autocommit=autocommit,
         )
-    except mysql.connector.errors.ProgrammingError as err:
+    except pymysql.ProgrammingError as err:
         if 'Unknown database' in err.msg:
             # Create the database if it doesn't exist.
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 user=user,
                 password=password,
                 host=host,
