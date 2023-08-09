@@ -19,6 +19,7 @@ def test_generate_dates():
     assert state.is_successful()
     assert state.result[task].result == ['20200101', '20200102', '20200103', '20200104']
 
+
 def test_generate_month_start_dates():
     with Flow("test") as f:
         task = common.generate_month_start_dates(
@@ -28,6 +29,7 @@ def test_generate_month_start_dates():
     state = f.run()
     assert state.is_successful()
     assert state.result[task].result == ['2023-01-01', '2023-02-01', '2023-03-01', '2023-04-01', '2023-05-01']
+
 
 def test_get_unzipped_cartesian_product():
     with Flow("test") as f:
