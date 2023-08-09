@@ -46,6 +46,7 @@ def generate_dates(start_date: str, end_date: str, date_format: str = "%Y%m%d"):
 
     return [date.strftime(date_format) for date in dates]
 
+
 @task
 def generate_month_start_dates(start_date: str, end_date: str, date_format: str = "%Y-%m-%d"):
     """
