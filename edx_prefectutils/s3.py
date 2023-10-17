@@ -2,6 +2,10 @@
 S3 related common methods and tasks for Prefect
 """
 
+from urllib.parse import urlparse
+import io
+import csv
+
 import prefect
 from prefect import task
 from prefect.tasks.aws import s3
@@ -92,3 +96,35 @@ def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str):
 @task
 def get_s3_url(s3_bucket, s3_path):
     return 's3://{bucket}/{path}'.format(bucket=s3_bucket, path=s3_path)
+
+
+def parse_s3_url(s3_url):
+    """
+    Parse and return bucket name and key
+    """
+    parsed = urlparse(s3_url)
+    bucket = parsed.netloc
+    # remove slash from the start of the key
+    key = parsed.path.lstrip('/')
+    return bucket, key
+
+
+@task
+def get_s3_csv_column_names(s3_url):
+    """
+    """
+    logger = prefect.context.get("logger")
+
+    bucket, key = parse_s3_url(s3_url)
+    s3_client = get_boto_client("s3")
+    objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=key)
+
+    fields = []
+    if objects['KeyCount']:
+        first_object_key = objects['Contents'][0]['key']
+        response = s3_client.get_object(Bucket=bucket, Key=first_object_key)
+        reader = csv.reader(io.TextIOWrapper(response['Body'], encoding="utf-8"))
+        fields = next(reader)
+        logger.info('CSV: [{}], Header: [{}]'.format(first_object_key, header))
+
+    return fields
