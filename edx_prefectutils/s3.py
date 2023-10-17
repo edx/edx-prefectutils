@@ -2,9 +2,9 @@
 S3 related common methods and tasks for Prefect
 """
 
-from urllib.parse import urlparse
-import io
 import csv
+import io
+from urllib.parse import urlparse
 
 import prefect
 from prefect import task
@@ -112,6 +112,7 @@ def parse_s3_url(s3_url):
 @task
 def get_s3_csv_column_names(s3_url):
     """
+    Read a csv file in S3 and return its header.
     """
     logger = prefect.context.get("logger")
 
@@ -119,12 +120,12 @@ def get_s3_csv_column_names(s3_url):
     s3_client = get_boto_client("s3")
     objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=key)
 
-    fields = []
+    header = []
     if objects['KeyCount']:
-        first_object_key = objects['Contents'][0]['key']
+        first_object_key = objects['Contents'][0]['Key']
         response = s3_client.get_object(Bucket=bucket, Key=first_object_key)
         reader = csv.reader(io.TextIOWrapper(response['Body'], encoding="utf-8"))
-        fields = next(reader)
+        header = next(reader)
         logger.info('CSV: [{}], Header: [{}]'.format(first_object_key, header))
 
-    return fields
+    return header

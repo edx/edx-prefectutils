@@ -7,8 +7,8 @@ import mysql.connector
 from prefect import task
 from prefect.engine import signals
 from prefect.utilities.logging import get_logger
-from edx_prefectutils.s3 import get_s3_csv_column_names
 
+from edx_prefectutils.s3 import get_s3_csv_column_names
 from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
 
 
@@ -45,7 +45,7 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
-def get_columns_load_order(s3_url: str, table_name: str, table_columns: list):
+def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list):
     """
     Return list of column names to tell `LOAD DATA` command the order in which to load data from csv.
 
@@ -53,7 +53,6 @@ def get_columns_load_order(s3_url: str, table_name: str, table_columns: list):
     Please see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.LoadFromS3.html
     """
     csv_column_names = get_s3_csv_column_names(s3_url)
-    table_column_names = [name for name, __ in table_columns]
 
     # We can load csv data into mysql table only if
     # 1. csv_column_names == table_column_names
@@ -181,7 +180,8 @@ def load_s3_data_to_mysql(
 
     columns_load_order = ''
     if load_in_order:
-        columns_to_load = get_columns_load_order(s3_url, table, table_columns)
+        table_column_names = [name for name, __ in table_columns]
+        columns_to_load = get_columns_load_order(s3_url, table, table_column_names)
         columns_load_order = '( {} )'.format(', '.join(columns_to_load))
         logger.info('MySQL column load order: {}'.format(columns_load_order))
 
@@ -203,7 +203,6 @@ def load_s3_data_to_mysql(
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
-            {columns_load_order}
         """.format(
             prefix_or_manifest=prefix_or_manifest,
             s3_url=s3_url,
@@ -212,7 +211,6 @@ def load_s3_data_to_mysql(
             enclosed_by=enclosed_by,
             escaped_by=escaped_by,
             ignore_lines=ignore_num_lines,
-            columns_load_order=columns_load_order,
         )
         connection.cursor().execute(query)
 
