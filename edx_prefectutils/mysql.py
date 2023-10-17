@@ -45,13 +45,14 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
-def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list):
+def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list, raise_exception: bool = False):
     """
     Return list of column names to tell `LOAD DATA` command the order in which to load data from csv.
 
     NOTE: This logic is based on `col_name_or_user_var` option provide by `LOAD DATA` command.
     Please see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.LoadFromS3.html
     """
+    logger = get_logger()
     csv_column_names = get_s3_csv_column_names(s3_url)
 
     # We can load csv data into mysql table only if
@@ -72,14 +73,16 @@ def get_columns_load_order(s3_url: str, table_name: str, table_column_names: lis
     if sorted(remaining_column_names) == sorted(table_column_names):
         return remaining_column_names
 
-    raise ValueError(
-        'Can not load [{}] to [{}]. Fields mismatch. CSVFields: [{}], TableFields: [{}]'.format(
-            s3_url,
-            table_name,
-            csv_column_names,
-            table_column_names
-        )
+    message = 'Can not load [{}] to [{}]. Fields mismatch. CSVFields: [{}], TableFields: [{}]'.format(
+        s3_url,
+        table_name,
+        csv_column_names,
+        table_column_names
     )
+    logger.warning(message)
+
+    if raise_exception:
+        raise ValueError(message)
 
 
 @task

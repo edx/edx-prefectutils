@@ -229,6 +229,13 @@ class ColumnsLoadOrderTest(TestCase):
             ['aa', 'cc', 'dd', 'bb'],
             False
         ),
+        # csv has extra columns in the start, can not load
+        (
+            ['extra1', 'extra2', 'aa', 'cc', 'dd', 'bb'],
+            ['aa', 'bb', 'cc', 'dd'],
+            ['aa', 'cc', 'dd', 'bb'],
+            True
+        ),
         # csv has extra columns at the in the middle, can not load
         (
             ['aa', 'cc', 'extra1', 'dd', 'bb', 'extra2'],
@@ -259,7 +266,8 @@ class ColumnsLoadOrderTest(TestCase):
         table_name = 'some_table'
 
         try:
-            columns_to_load = utils_mysql.get_columns_load_order(self.s3_url, table_name, table_columns)
+            raise_exception = True
+            columns_to_load = utils_mysql.get_columns_load_order(self.s3_url, table_name, table_columns, raise_exception)
             assert columns_to_load == expected_columns_to_load
         except ValueError as ex:
             raised_exception_message = ex.args[0]
