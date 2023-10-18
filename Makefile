@@ -77,7 +77,7 @@ upgrade: export CUSTOM_COMPILE_COMMAND=make upgrade
 upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
 	pip install -qr requirements/pip-tools.txt
 	# Make sure to compile files after any other files they include!
-	pip-compile --upgrade --allow-unsafe -o requirements/pip.txt requirements/pip.in
+	pip-compile --upgrade --allow-unsafe --resolver=backtracking -o requirements/pip.txt requirements/pip.in
 	pip-compile --rebuild --upgrade -o requirements/pip-tools.txt requirements/pip-tools.in
 	pip install -qr requirements/pip.txt
 	pip install -qr requirements/pip-tools.txt
@@ -95,3 +95,11 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+piptools-requirements: ## install tools prior to requirements
+	pip install -q -r requirements/pip-tools.txt
+
+requirements: piptools-requirements ## install development environment requirements
+	pip install -qr requirements/pip.txt
+	pip install -qr requirements/base.txt --exists-action w
+	pip-sync requirements/base.txt requirements/test.txt

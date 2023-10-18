@@ -122,10 +122,11 @@ def get_s3_csv_column_names(s3_url):
 
     header = []
     if objects['KeyCount']:
-        first_object_key = objects['Contents'][0]['Key']
-        response = s3_client.get_object(Bucket=bucket, Key=first_object_key)
+        # find the key of first object that is actually a csv
+        first_csv_object_key = next((obj['Key'] for obj in objects['Contents'] if obj['Key'].endswith(".csv")), None)
+        response = s3_client.get_object(Bucket=bucket, Key=first_csv_object_key)
         reader = csv.reader(io.TextIOWrapper(response['Body'], encoding="utf-8"))
         header = next(reader)
-        logger.info('CSV: [{}], Header: [{}]'.format(first_object_key, header))
+        logger.info('CSV: [{}], Header: [{}]'.format(first_csv_object_key, header))
 
     return header

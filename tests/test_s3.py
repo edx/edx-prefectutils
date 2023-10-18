@@ -48,6 +48,8 @@ class S3CSVHeaderTest(TestCase):
         s3_client = get_boto_client("s3")
         s3_client.create_bucket(Bucket=self.bucket)
         csv_file_path = self.create_input_data_csv()
+        # create an empty object which is equivalent to creating a folder in bucket
+        s3_client.put_object(Bucket=self.bucket, Body='', Key=self.prefix)
         s3_client.upload_file(csv_file_path, self.bucket, f"{self.prefix}test_data.csv")
 
     def tearDown(self):

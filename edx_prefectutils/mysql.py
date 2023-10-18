@@ -45,7 +45,7 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
-def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list, raise_exception: bool = False):
+def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list, raise_exception: bool):
     """
     Return list of column names to tell `LOAD DATA` command the order in which to load data from csv.
 
@@ -102,6 +102,7 @@ def load_s3_data_to_mysql(
     overwrite_with_temp_table: bool = False,
     use_manifest: bool = False,
     load_in_order: bool = False,
+    raise_exception_on_columns_mismatch: bool = False,
 ):
 
     """
@@ -133,7 +134,8 @@ def load_s3_data_to_mysql(
               IMPORTANT: Do not use this option for incrementally updated tables as any historical data would be lost.
                 Defaults to `False`.
       use_manifest (bool, optional): Whether to use a manifest file to load data. Defaults to `False`.
-      load_in_order (bool, optional): Load data into mysql table according to the column ordering in csv file.
+      load_in_order (bool, optional): Whether to load data into table according to the column ordering in csv file.
+      raise_exception (bool, optional): Whether to raise exception or not when csv and table columns mismatch.
     """
 
     def _drop_temp_tables(table, connection):
@@ -184,7 +186,12 @@ def load_s3_data_to_mysql(
     columns_load_order = ''
     if load_in_order:
         table_column_names = [name for name, __ in table_columns]
-        columns_to_load = get_columns_load_order(s3_url, table, table_column_names)
+        columns_to_load = get_columns_load_order(
+            s3_url,
+            table,
+            table_column_names,
+            raise_exception_on_columns_mismatch
+        )
         columns_load_order = '( {} )'.format(', '.join(columns_to_load))
         logger.info('MySQL column load order: {}'.format(columns_load_order))
 
@@ -206,6 +213,7 @@ def load_s3_data_to_mysql(
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
+            {columns_load_order}
         """.format(
             prefix_or_manifest=prefix_or_manifest,
             s3_url=s3_url,
@@ -214,6 +222,7 @@ def load_s3_data_to_mysql(
             enclosed_by=enclosed_by,
             escaped_by=escaped_by,
             ignore_lines=ignore_num_lines,
+            columns_load_order=columns_load_order,
         )
         connection.cursor().execute(query)
 
