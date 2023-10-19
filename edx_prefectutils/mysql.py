@@ -8,6 +8,7 @@ from prefect import task
 from prefect.engine import signals
 from prefect.utilities.logging import get_logger
 
+from edx_prefectutils.s3 import get_s3_csv_column_names
 from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
 
 
@@ -44,6 +45,46 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
+def get_columns_load_order(s3_url: str, table_name: str, table_column_names: list, raise_exception: bool):
+    """
+    Return list of column names to tell `LOAD DATA` command the order in which to load data from csv.
+
+    NOTE: This logic is based on `col_name_or_user_var` option provide by `LOAD DATA` command.
+    Please see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.LoadFromS3.html
+    """
+    logger = get_logger()
+    csv_column_names = get_s3_csv_column_names(s3_url)
+
+    # We can load csv data into mysql table only if
+    # 1. csv_column_names == table_column_names
+    # 2. csv_column_names and table_column_names have same column names but order does not match
+    # 3. csv_column_names list have more columns and extra columns are at the end of csv_column_names
+
+    # case 1 and 2
+    if csv_column_names == table_column_names or sorted(csv_column_names) == sorted(table_column_names):
+        return csv_column_names
+
+    # case 3
+    # find extra columns in csv_column_names
+    extra_columns = [column for column in csv_column_names if column not in table_column_names]
+    # remove extra columns from csv_column_names
+    remaining_column_names = csv_column_names[0:-len(extra_columns)]
+    # remaining_columns_names must be equal to table_column_names if extra_columns are present at the end
+    if sorted(remaining_column_names) == sorted(table_column_names):
+        return remaining_column_names
+
+    message = 'Can not load [{}] to [{}]. Fields mismatch. CSVFields: [{}], TableFields: [{}]'.format(
+        s3_url,
+        table_name,
+        csv_column_names,
+        table_column_names
+    )
+    logger.warning(message)
+
+    if raise_exception:
+        raise ValueError(message)
+
+
 @task
 def load_s3_data_to_mysql(
     aurora_credentials: dict,
@@ -60,6 +101,8 @@ def load_s3_data_to_mysql(
     overwrite: bool = False,
     overwrite_with_temp_table: bool = False,
     use_manifest: bool = False,
+    load_in_order: bool = False,
+    raise_exception_on_columns_mismatch: bool = False,
 ):
 
     """
@@ -91,6 +134,8 @@ def load_s3_data_to_mysql(
               IMPORTANT: Do not use this option for incrementally updated tables as any historical data would be lost.
                 Defaults to `False`.
       use_manifest (bool, optional): Whether to use a manifest file to load data. Defaults to `False`.
+      load_in_order (bool, optional): Whether to load data into table according to the column ordering in csv file.
+      raise_exception (bool, optional): Whether to raise exception or not when csv and table columns mismatch.
     """
 
     def _drop_temp_tables(table, connection):
@@ -138,6 +183,18 @@ def load_s3_data_to_mysql(
         query = "CREATE TABLE {table} ({table_schema})".format(table=table + '_temp', table_schema=table_schema)
         connection.cursor().execute(query)
 
+    columns_load_order = ''
+    if load_in_order:
+        table_column_names = [name for name, __ in table_columns]
+        columns_to_load = get_columns_load_order(
+            s3_url,
+            table,
+            table_column_names,
+            raise_exception_on_columns_mismatch
+        )
+        columns_load_order = '( {} )'.format(', '.join(columns_to_load))
+        logger.info('MySQL column load order: {}'.format(columns_load_order))
+
     try:
         if row and overwrite and not overwrite_with_temp_table:
             query = "DELETE FROM {table} {record_filter}".format(table=table, record_filter=record_filter)
@@ -156,6 +213,7 @@ def load_s3_data_to_mysql(
             FIELDS TERMINATED BY '{delimiter}' OPTIONALLY ENCLOSED BY '{enclosed_by}'
             ESCAPED BY '{escaped_by}'
             IGNORE {ignore_lines} LINES
+            {columns_load_order}
         """.format(
             prefix_or_manifest=prefix_or_manifest,
             s3_url=s3_url,
@@ -164,6 +222,7 @@ def load_s3_data_to_mysql(
             enclosed_by=enclosed_by,
             escaped_by=escaped_by,
             ignore_lines=ignore_num_lines,
+            columns_load_order=columns_load_order,
         )
         connection.cursor().execute(query)
 

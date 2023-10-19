@@ -1,5 +1,9 @@
+from unittest import TestCase
+
 import mock
 import pytest
+from ddt import data, ddt, unpack
+from mock import patch
 from prefect.core import Flow
 from prefect.engine import signals
 from pytest_mock import mocker  # noqa: F401
@@ -18,7 +22,14 @@ def mock_mysql_connection(mocker):  # noqa: F811
     return mock_connection
 
 
-def test_load_s3_data_to_mysql_no_overwrite_existing_data(mock_mysql_connection):
+@pytest.fixture
+def mock_get_columns_load_order(mocker):  # noqa: F811
+    mocked = mocker.patch.object(utils_mysql, 'get_columns_load_order')
+    mocked.return_value = ['id', 'course_id']
+    return mocked
+
+
+def test__load_s3_data_to_mysql_no_overwrite_existing_data(mock_mysql_connection):
     mock_cursor = mock_mysql_connection.cursor()
     mock_fetchone = mock.Mock()
     mock_cursor.fetchone = mock_fetchone
@@ -38,7 +49,7 @@ def test_load_s3_data_to_mysql_no_overwrite_existing_data(mock_mysql_connection)
         )
 
 
-def test_load_s3_data_to_mysql_overwrite_without_record_filter(mock_mysql_connection):
+def test__load_s3_data_to_mysql_overwrite_without_record_filter(mock_mysql_connection):
     mock_cursor = mock_mysql_connection.cursor()
     mock_fetchone = mock.Mock()
     mock_cursor.fetchone = mock_fetchone
@@ -63,7 +74,7 @@ def test_load_s3_data_to_mysql_overwrite_without_record_filter(mock_mysql_connec
     )
 
 
-def test_load_s3_data_to_mysql_overwrite_with_record_filter(mock_mysql_connection):
+def test__load_s3_data_to_mysql_overwrite_with_record_filter(mock_mysql_connection):
     mock_cursor = mock_mysql_connection.cursor()
     mock_fetchone = mock.Mock()
     mock_cursor.fetchone = mock_fetchone
@@ -89,7 +100,7 @@ def test_load_s3_data_to_mysql_overwrite_with_record_filter(mock_mysql_connectio
     )
 
 
-def test_load_s3_data_to_mysql(mock_mysql_connection):
+def test_load_s3_data_to_mysql(mock_mysql_connection, mock_get_columns_load_order):
     mock_cursor = mock_mysql_connection.cursor()
     mock_fetchone = mock.Mock()
     mock_cursor.fetchone = mock_fetchone
@@ -103,22 +114,24 @@ def test_load_s3_data_to_mysql(mock_mysql_connection):
             s3_url="s3://edx-test/test/",
             record_filter="where course_id='edX/Open_DemoX/edx_demo_course'",
             ignore_num_lines=2,
-            overwrite=True
+            overwrite=True,
+            load_in_order=True,
         )
 
     state = f.run()
     assert state.is_successful()
+
     mock_cursor.execute.assert_has_calls(
         [
             mock.call("\n        CREATE TABLE IF NOT EXISTS test_table (id int,course_id varchar(255) NOT NULL)\n    "), # noqa
             mock.call("SELECT 1 FROM test_table where course_id='edX/Open_DemoX/edx_demo_course' LIMIT 1"), # noqa
             mock.call("DELETE FROM test_table where course_id='edX/Open_DemoX/edx_demo_course'"), # noqa
-            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 2 LINES\n            ( id, course_id )\n        "), # noqa
         ]
     )
 
 
-def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
+def test__load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection, mock_get_columns_load_order):
     mock_cursor = mock_mysql_connection.cursor()
 
     with Flow("test") as f:
@@ -130,6 +143,7 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
             s3_url="s3://edx-test/test/",
             overwrite=True,
             overwrite_with_temp_table=True,
+            load_in_order=True,
         )
 
     state = f.run()
@@ -141,7 +155,7 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
             mock.call("DROP TABLE IF EXISTS test_table_old"),
             mock.call("DROP TABLE IF EXISTS test_table_temp"),
             mock.call("CREATE TABLE test_table_temp (id int,course_id varchar(255) NOT NULL)"),
-            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 PREFIX 's3://edx-test/test/'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n            ( id, course_id )\n        "), # noqa
             mock.call("RENAME TABLE test_table to test_table_old, test_table_temp to test_table"),
             mock.call("DROP TABLE IF EXISTS test_table_old"),
             mock.call("DROP TABLE IF EXISTS test_table_temp"),
@@ -149,7 +163,7 @@ def test_load_s3_data_to_mysql_overwrite_with_temp_table(mock_mysql_connection):
     )
 
 
-def test_table_creation_with_indexes(mock_mysql_connection):
+def test__table_creation_with_indexes(mock_mysql_connection, mock_get_columns_load_order):
     mock_cursor = mock_mysql_connection.cursor()
     with Flow("test") as f:
         utils_mysql.load_s3_data_to_mysql(
@@ -172,7 +186,7 @@ def test_table_creation_with_indexes(mock_mysql_connection):
     )
 
 
-def test_load_s3_data_to_mysql_with_manifest(mock_mysql_connection):
+def test__load_s3_data_to_mysql_with_manifest(mock_mysql_connection, mock_get_columns_load_order):
     mock_cursor = mock_mysql_connection.cursor()
     with Flow("test") as f:
         utils_mysql.load_s3_data_to_mysql(
@@ -184,12 +198,120 @@ def test_load_s3_data_to_mysql_with_manifest(mock_mysql_connection):
             overwrite=True,
             overwrite_with_temp_table=True,
             use_manifest=True,
+            load_in_order=True,
         )
 
     state = f.run()
     assert state.is_successful()
     mock_cursor.execute.assert_has_calls(
         [
-            mock.call("\n            LOAD DATA FROM S3 MANIFEST 's3://edx-test/some/prefix/manifest.json'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n        "), # noqa
+            mock.call("\n            LOAD DATA FROM S3 MANIFEST 's3://edx-test/some/prefix/manifest.json'\n            INTO TABLE test_table_temp\n            FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY ''\n            ESCAPED BY '\\\\'\n            IGNORE 0 LINES\n            ( id, course_id )\n        "), # noqa
         ]
     )
+
+
+@ddt
+class ColumnsLoadOrderTest(TestCase):
+
+    def setUp(self):
+        self.bucket = 'ma_test_bucket'
+        self.prefix = 'reports/progress/'
+        self.s3_url = f's3://{self.bucket}/{self.prefix}'
+
+    @data(
+        # coloum names in csv and table are same
+        (
+            ['a', 'b', 'c', 'd'],
+            ['a', 'b', 'c', 'd'],
+            ['a', 'b', 'c', 'd'],
+            False,
+        ),
+        # coloum names in csv and table are same but in different order
+        (
+            ['aa', 'bb', 'cc', 'dd'],
+            ['bb', 'aa', 'dd', 'cc'],
+            ['aa', 'bb', 'cc', 'dd'],
+            False,
+        ),
+        # csv has extra columns at the end, discard extra tables and load data
+        (
+            ['aa', 'cc', 'dd', 'bb', 'extra1', 'extra2'],
+            ['aa', 'bb', 'cc', 'dd'],
+            ['aa', 'cc', 'dd', 'bb'],
+            False,
+        ),
+        # table has more columns than csv, can not load
+        (
+            ['aa', 'bb', 'cc', 'dd'],
+            ['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
+            [],
+            True,
+        ),
+        # csv has extra columns in the start, can not load
+        (
+            ['extra1', 'extra2', 'aa', 'cc', 'dd', 'bb'],
+            ['aa', 'bb', 'cc', 'dd'],
+            [],
+            True,
+        ),
+        # csv has extra columns at the in the middle, can not load
+        (
+            ['aa', 'cc', 'extra1', 'dd', 'bb', 'extra2'],
+            ['aa', 'bb', 'cc', 'dd'],
+            [],
+            True,
+        ),
+        # csv and table have different columns, can not load
+        (
+            ['asdf', 'qwer', 'aaa', 'der'],
+            ['aa', 'bb', 'cc', 'dd'],
+            [],
+            True,
+        ),
+        # for some reason, we are unable to extract header from csv
+        (
+            [],
+            ['aa', 'bb', 'cc', 'dd'],
+            [],
+            True,
+        ),
+    )
+    @unpack
+    @patch("edx_prefectutils.mysql.get_s3_csv_column_names")
+    def test__get_columns_load_order(
+        self,
+        csv_columns,
+        table_columns,
+        expected_columns_to_load,
+        expected_exception_raised,
+        get_s3_csv_column_names_mock
+    ):
+        get_s3_csv_column_names_mock.return_value = csv_columns
+
+        table_name = 'some_table'
+
+        exception_raised = False
+        try:
+            raise_exception = True
+            columns_to_load = utils_mysql.get_columns_load_order(
+                self.s3_url,
+                table_name,
+                table_columns,
+                raise_exception
+            )
+            assert columns_to_load == expected_columns_to_load
+        except ValueError as ex:
+            exception_raised = True
+            raised_exception_message = ex.args[0]
+
+        # Verify that exception has raised when it was expected
+        assert expected_exception_raised == exception_raised
+
+        if exception_raised:
+            expected_msg = 'Can not load [{}] to [{}]. Fields mismatch. CSVFields: [{}], TableFields: [{}]'.format(
+                self.s3_url,
+                table_name,
+                csv_columns,
+                table_columns
+            )
+            assert raised_exception_message == expected_msg
