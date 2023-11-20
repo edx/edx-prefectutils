@@ -4,9 +4,10 @@ Tasks for interacting with Aurora MySQL.
 import os
 
 import mysql.connector
-from prefect import task
+# from prefect import task
 from prefect.engine import signals
-from prefect.utilities.logging import get_logger
+# from prefect.utilities.logging import get_logger
+import logger
 
 from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
 
@@ -44,7 +45,7 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
-@task
+# @task
 def load_s3_data_to_mysql(
     aurora_credentials: dict,
     database: str,
@@ -99,6 +100,7 @@ def load_s3_data_to_mysql(
             connection.cursor().execute(query)
 
     logger = get_logger()
+    logger = logging.getLogger()
 
     connection = create_mysql_connection(aurora_credentials, database)
 

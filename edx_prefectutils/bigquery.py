@@ -2,17 +2,28 @@
 Utility methods and tasks for working with BigQuery/Google Cloud Storage from a Prefect flow.
 """
 
+# import os
+# from urllib.parse import urlparse
+
+# import backoff
+# import google.api_core.exceptions
+# from google.cloud import bigquery
+# from prefect import task
+# from prefect.utilities.gcp import get_bigquery_client, get_storage_client
+
+
 import os
 from urllib.parse import urlparse
 
 import backoff
 import google.api_core.exceptions
-from google.cloud import bigquery
-from prefect import task
-from prefect.utilities.gcp import get_bigquery_client, get_storage_client
+import boto3
+from google.cloud import storage, bigquery
+from airflow.providers.google.cloud.hooks.gcs import GoogleCloudStorageHook
+from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 
 
-@task
+
 def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
     """
     Task to delete files from a GCS prefix.
@@ -22,7 +33,21 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
       url (str): Pointer to a GCS prefix containing one or more objects to delete.
       project (str): Name of the project which contains the target objects.
     """
-    gcs_client = get_storage_client(credentials=gcp_credentials, project=project)
+    # gcs_client = get_storage_client(credentials=gcp_credentials, project=project)
+    # parsed_url = urlparse(url)
+    # bucket = gcs_client.get_bucket(parsed_url.netloc)
+    # prefix = parsed_url.path.lstrip("/")
+    # # The list function is needed because bucket.list_blobs returns an
+    # # HTTPIterator object, which does not implement __len__.
+    # # But bucket.delete_blobs expects an Iterable with __len__.
+    # blobs = list(bucket.list_blobs(prefix=prefix))
+    # bucket.delete_blobs(blobs)
+    # return blobs
+
+    #sankat new code
+    
+    gcs_hook = GoogleCloudStorageHook(gcp_conn_id='connection_id')
+    gcs_client = gcs_hook.get_conn()
     parsed_url = urlparse(url)
     bucket = gcs_client.get_bucket(parsed_url.netloc)
     prefix = parsed_url.path.lstrip("/")
@@ -33,11 +58,10 @@ def cleanup_gcs_files(gcp_credentials: dict, url: str, project: str):
     bucket.delete_blobs(blobs)
     return blobs
 
-
-@task
 @backoff.on_exception(backoff.expo,
                       google.api_core.exceptions.NotFound,
                       max_time=60*60*2)
+
 def extract_ga_table(project: str, gcp_credentials: dict, dataset: str, date: str, output_root: str):
     """
     Runs a BigQuery extraction job, extracting the google analytics' `ga_sessions` table for a
@@ -48,7 +72,8 @@ def extract_ga_table(project: str, gcp_credentials: dict, dataset: str, date: st
     base_extraction_path = os.path.join(output_root, dataset, date)
     destination_uri = os.path.join(base_extraction_path, dest_filename)
 
-    client = get_bigquery_client(credentials=gcp_credentials, project=project)
+    bigquery_hook = BigQueryHook(bigquery_conn_id='bigquery_connection_id')
+    client = bigquery_hook.get_client(project=project)
 
     dataset = client.dataset(dataset, project=project)
     table = dataset.table(table_name)

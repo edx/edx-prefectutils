@@ -6,7 +6,8 @@ import datetime
 import fnmatch
 import json
 
-import prefect
+# import prefect
+import logger
 from paramiko import SFTPClient, Transport
 from prefect import config, task
 from prefect.engine import signals
@@ -71,7 +72,8 @@ def get_paypal_filename(date, prefix, connection, remote_path):
     """
     Get remote filename. Sample remote filename: DDR-20190822.01.008.CSV
     """
-    logger = prefect.context.get("logger")
+    # logger = prefect.context.get("logger")
+    logger = logger.getLogger()
     logger.info(connection)
     date_string = date.strftime('%Y%m%d')
     pattern = (prefix, date_string, 'CSV')
@@ -103,7 +105,8 @@ def fetch_paypal_report(
         s3_path: str,
         overwrite: bool,
 ):
-    logger = prefect.context.get("logger")
+    # logger = prefect.context.get("logger")
+    logger = logger.getLogger()
     logger.info("Pulling Paypal report for {}".format(date))
 
     if not overwrite:
@@ -116,9 +119,10 @@ def fetch_paypal_report(
         existing_file = list_object_keys_from_s3.run(s3_bucket, s3_key)
 
         if existing_file:
-            raise signals.SKIP(
-                'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
-            )
+            # raise signals.SKIP(
+            #     'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
+            # )
+            raise Exception("File {} already exists and we are not overwriting. Skipping.".format(s3_key))
         else:
             logger.info("File not found, continuing download for {}.".format(date))
 

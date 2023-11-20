@@ -1,8 +1,10 @@
 import backoff
-import prefect
+# import prefect
+import logging
 import requests
-from prefect import task
+# from prefect import task
 from prefect.backend import get_key_value, set_key_value
+from airflow.models import Variable
 from snowflake.connector import ProgrammingError
 
 from .snowflake import SFCredentials, get_batched_rows_from_snowflake
@@ -64,7 +66,7 @@ def _make_standard_user_attrs(row):
     }
 
 
-@task
+# @task
 @backoff.on_exception(backoff.expo,
                       ProgrammingError,
                       max_tries=3)
@@ -81,7 +83,8 @@ def sync_hubspot_leads_to_braze(
 
     Note that we must handle users that don't have a proper braze external_id, because they are not registered.
     """
-    logger = prefect.context.get('logger')
+    # logger = prefect.context.get('logger')
+    logger = logging.getLogger()
     columns = [
         'audience',
         'braze_hs_contact',
@@ -120,7 +123,8 @@ def sync_hubspot_leads_to_braze(
     # Also, to reduce churn and data usage, only sync items that have changed since our last successful run
     LAST_SUCCESS_KEY = 'hubspot-leads-last-success'
     try:
-        last_success = get_key_value(key=LAST_SUCCESS_KEY)
+        # last_success = get_key_value(key=LAST_SUCCESS_KEY)
+        last_sucesss = Variable.get("LAST_SUCCESS_KEY")
         alias_only_where += f" AND lastmodifieddate > '{last_success}'"
         registered_where += f" AND lastmodifieddate > '{last_success}'"
         logger.info('Read lastmodifieddate of %s', last_success)
@@ -152,7 +156,8 @@ def sync_hubspot_leads_to_braze(
 
     if max_date:
         logger.info('Saving lastmodifieddate of %s', max_date.isoformat())
-        set_key_value(key=LAST_SUCCESS_KEY, value=max_date.isoformat())
+        # set_key_value(key=LAST_SUCCESS_KEY, value=max_date.isoformat())
+        Variable.set("LAST_SUCCESS_KEY", max_date.isoformat())
 
 
 # Retry rate limit errors for 5 minutes
