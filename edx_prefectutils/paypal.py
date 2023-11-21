@@ -122,7 +122,8 @@ def fetch_paypal_report(
             # raise signals.SKIP(
             #     'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
             # )
-            raise Exception("File {} already exists and we are not overwriting. Skipping.".format(s3_key))
+            logger.info("File {} already exists and we are not overwriting. Skipping.".format(s3_key))
+            return
         else:
             logger.info("File not found, continuing download for {}.".format(date))
 

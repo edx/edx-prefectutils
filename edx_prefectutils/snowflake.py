@@ -11,10 +11,12 @@ import backoff
 import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from prefect import task
+# from prefect import task
 from prefect.engine import signals
-from prefect.tasks.aws import s3
-from prefect.utilities.logging import get_logger
+# from prefect.tasks.aws import s3
+from airflow.hooks.S3_hook import S3Hook
+# from prefect.utilities.logging import get_logger
+import logging
 
 from edx_prefectutils import s3 as s3_utils
 
@@ -97,7 +99,7 @@ def qualified_stage_name(database, schema, table) -> str:
     )
 
 
-@task
+# @task
 @backoff.on_exception(backoff.expo,
                       snowflake.connector.ProgrammingError,
                       max_tries=3)
@@ -224,7 +226,7 @@ def load_ga_data_to_snowflake(
         sf_connection.close()
 
 
-@task
+# @task
 def load_s3_data_to_snowflake(
     date: str,
     date_property: str,
@@ -282,9 +284,11 @@ def load_s3_data_to_snowflake(
       disable_existence_check (bool, optional): Whether to disable check for existing data, useful when
               always appending to the table regardless of any existing data for that provided `date`
     """
-    logger = get_logger()
+    # logger = get_logger()
+    logger = logging.getLogger()
     if not file and not pattern:
-        raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
+        # raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
+        raise Exception('Either `file` or `pattern` must be specified to run this task.')
 
     sf_connection = create_snowflake_connection(sf_credentials, sf_role, warehouse=sf_warehouse)
 
@@ -320,7 +324,9 @@ def load_s3_data_to_snowflake(
                 raise
 
     if row and not overwrite:
-        raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')
+        # raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')
+        logger.info('Skipping task as data for the date exists and no overwrite was provided.')
+        return
     else:
         logger.info("Continuing with S3 load for {}".format(date))
 
@@ -415,7 +421,7 @@ def load_s3_data_to_snowflake(
         sf_connection.close()
 
 
-@task
+# @task
 def export_snowflake_table_to_s3(
     sf_credentials: SFCredentials,
     sf_database: str,
@@ -433,6 +439,7 @@ def export_snowflake_table_to_s3(
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
+    s3_conn_id: str,
 ):
 
     """
@@ -465,7 +472,8 @@ def export_snowflake_table_to_s3(
               copy option.
       generate_manifest (bool, optional): Whether to generate a manifest file in S3. Defaults to `FALSE`.
     """
-    logger = get_logger()
+    # logger = get_logger()
+    logger = logging.getLogger()
 
     sf_connection = create_snowflake_connection(
         credentials=sf_credentials,
@@ -552,14 +560,22 @@ def export_snowflake_table_to_s3(
                     "urls": s3_file_paths,
                 }
             )
-            s3.S3Upload(bucket=export_bucket).run(
-                json.dumps(manifest_file_content),
-                key=s3_manifest_file_prefix
+            s3_hook = S3Hook(s3_conn_id)
+
+            s3_hook.load_file(
+                file_name=json.dumps(manifest_file_content), key=s3_manifest_file_prefix, bucket_name=export_bucket
             )
+            # s3.S3Upload(bucket=export_bucket).run(
+            #     json.dumps(manifest_file_content),
+            #     key=s3_manifest_file_prefix
+            # )
+
+
     except snowflake.connector.ProgrammingError as e:
         if 'Files already existing at the unload destination' in e.msg:
             logger.error("Files already exist at {destination}".format(destination=export_path))
-            raise signals.FAIL('Files already exist. Use overwrite option to force unloading.')
+            # raise signals.FAIL('Files already exist. Use overwrite option to force unloading.')
+            raise Exception('Files already exist. Use overwrite option to force unloading.')
         else:
             raise
     finally:

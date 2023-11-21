@@ -8,7 +8,8 @@ from collections import OrderedDict
 import ciso8601
 import pytz
 import six
-from prefect.utilities.logging import get_logger
+# from prefect.utilities.logging import get_logger
+import logging
 
 DEFAULT_NULL_VALUE = b'\\N'
 
@@ -782,7 +783,8 @@ class RecordMapper(object):
         (It's only fatal, then, if the value was required.)
         """
 
-        logger = get_logger()
+        # logger = get_logger()
+        logger = logging.getLogger()
 
         def backslash_encode_value(value):
             """Implement simple backslash encoding, similar to .encode('string_escape')."""

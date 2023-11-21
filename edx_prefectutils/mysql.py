@@ -132,7 +132,9 @@ def load_s3_data_to_mysql(
     row = cursor.fetchone()
 
     if row and not overwrite:
-        raise signals.SKIP('Skipping task as data already exists in the dest. table and no overwrite was provided.')
+        # raise signals.SKIP('Skipping task as data already exists in the dest. table and no overwrite was provided.')
+        logger.info('Skipping task as data already exists in the dest. table and no overwrite was provided.')
+        return
 
     # Create a temp table for loading data
     if overwrite and overwrite_with_temp_table:

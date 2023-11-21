@@ -7,13 +7,14 @@ import xml.etree.ElementTree as ET
 from os.path import basename, join, splitext
 from urllib.parse import urlparse
 
-import prefect
+# import prefect
+import datetime
 import requests
 from prefect import task
 from prefect.tasks.aws import s3
 
 
-@task
+# @task
 def fetch_sitemap_urls(sitemap_index_url: str) -> str:
     """
     Fetches a list of sitemap urls by parsing sitemap index file.
@@ -25,12 +26,13 @@ def fetch_sitemap_urls(sitemap_index_url: str) -> str:
     return sitemap_urls
 
 
-@task
+# @task
 def fetch_sitemap(sitemap_url: str):
     """
     Fetches sitemap data from a given sitemap URL.
     """
-    scraped_at = str(prefect.context.date)
+    # scraped_at = str(prefect.context.date)
+    scraped_at = str(datetime.date.today())
     r = requests.get(sitemap_url)
     sitemap_xml = r.text
     tree = ET.fromstring(sitemap_xml)
@@ -44,17 +46,22 @@ def fetch_sitemap(sitemap_url: str):
     return sitemap_filename, json.dumps(sitemap_json)
 
 
-@task
-def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str):
+# @task
+def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str, s3_conn_id: str):
     """
     Writes sitemap data in JSON format to S3.
     """
     filename, sitemap_json = sitemap_data
-    date_path = f'{prefect.context.today}/{filename}.json'
+    # date_path = f'{prefect.context.today}/{filename}.json'
+    date_path = f'{datetime.date.today()}/{filename}.json'
     s3_key = join(s3_path, date_path)
-    s3.S3Upload(bucket=s3_bucket).run(
-        sitemap_json,
-        key=s3_key,
-    )
+    # s3.S3Upload(bucket=s3_bucket).run(
+    #     sitemap_json,
+    #     key=s3_key,
+    # )
+    s3_hook = S3Hook(s3_conn_id)
+    s3_hook.load_file(
+            file_name=sitemap_json, key=s3_key, bucket_name=s3_bucket
+        )
 
     return date_path
