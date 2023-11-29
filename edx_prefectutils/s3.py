@@ -9,11 +9,11 @@ import logging
 from airflow.hooks.S3_hook import S3Hook
 import boto3
 from botocore.client import Config
-from prefect.utilities.aws import get_boto_client
+# from prefect.utilities.aws import get_boto_client
 
 
 # @task
-def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dict = None):
+def delete_s3_directory(s3_conn_id: str,bucket: str = None, prefix: str = None, credentials: dict = None):
     """
     Deletes all objects with the given S3 directory (prefix) from the given bucket.
 
@@ -24,20 +24,22 @@ def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dic
     """
     s3_keys = list_object_keys_from_s3.run(bucket, prefix, credentials)
     if s3_keys:
-        s3_client = get_boto_client('s3', credentials=credentials)
+        # s3_client = get_boto_client('s3', credentials=credentials)
+        s3_hook = S3Hook(s3_conn_id)
         # logger = prefect.context.get("logger")
         logger = logging.getLogger()
         logger.info("Deleting S3 keys: {}".format(s3_keys))
-        s3_client.delete_objects(
-            Bucket=bucket,
-            Delete={
-                'Objects': [{'Key': key} for key in s3_keys]
-            }
-        )
+        # s3_client.delete_objects(
+        #     Bucket=bucket,
+        #     Delete={
+        #         'Objects': [{'Key': key} for key in s3_keys]
+        #     }
+        # )
+        s3_hook.delete_objects(bucket_name=bucket, objects=s3_keys)
 
 
 # @task
-def delete_objects_from_s3(objects_to_delete: list, bucket: str = None, credentials: dict = None, s3_conn_id: str ):
+def delete_objects_from_s3(objects_to_delete: list, s3_conn_id: str, bucket: str = None, credentials: dict = None):
     """
     Delete an object or objects from S3.
 
@@ -55,7 +57,7 @@ def delete_objects_from_s3(objects_to_delete: list, bucket: str = None, credenti
 
 
 # @task
-def list_object_keys_from_s3(bucket: str = None, prefix: str = '', credentials: dict = None, s3_conn_id: str):
+def list_object_keys_from_s3(s3_conn_id: str, bucket: str = None, prefix: str = '', credentials: dict = None):
     """
     List objects key names from an S3 bucket that match the given prefix.
 
@@ -86,7 +88,7 @@ def get_s3_path_for_date(date):
 
 
 # @task
-def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3_conn_id: str, ti):
+def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3_conn_id: str):
     # logger = prefect.context.get("logger")
     logger = logging.getLogger()
 
@@ -105,8 +107,7 @@ def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3
     #     report_str,
     #     key=s3_key
     # )
-    
-    ti.xcom_push(key="segment_date_download_results", value= date_download_results)
+
     return date_path
 
 
