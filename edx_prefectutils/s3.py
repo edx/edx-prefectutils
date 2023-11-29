@@ -86,7 +86,7 @@ def get_s3_path_for_date(date):
 
 
 # @task
-def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3_conn_id: str):
+def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3_conn_id: str, ti):
     # logger = prefect.context.get("logger")
     logger = logging.getLogger()
 
@@ -105,7 +105,8 @@ def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, s3
     #     report_str,
     #     key=s3_key
     # )
-
+    
+    ti.xcom_push(key="segment_date_download_results", value= date_download_results)
     return date_path
 
 
