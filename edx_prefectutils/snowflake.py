@@ -12,7 +12,7 @@ import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 # from prefect import task
-from prefect.engine import signals
+# from prefect.engine import signals
 # from prefect.tasks.aws import s3
 from airflow.hooks.S3_hook import S3Hook
 # from prefect.utilities.logging import get_logger
@@ -239,7 +239,6 @@ def load_s3_data_to_snowflake(
     sf_storage_integration_name: str,
     s3_url: str,
     sf_file_format: str = "TYPE='JSON', STRIP_OUTER_ARRAY=TRUE",
-    file: str = None,
     pattern: str = None,
     overwrite: bool = False,
     truncate: bool = False,
@@ -284,6 +283,8 @@ def load_s3_data_to_snowflake(
       disable_existence_check (bool, optional): Whether to disable check for existing data, useful when
               always appending to the table regardless of any existing data for that provided `date`
     """
+    file = ti.xcom_pull(key="date_path", task_ids="fetch_segment_source_info")
+
     # logger = get_logger()
     logger = logging.getLogger()
     if not file and not pattern:
@@ -431,6 +432,7 @@ def export_snowflake_table_to_s3(
     sf_warehouse: str,
     sf_storage_integration: str,
     s3_path: str,
+    s3_conn_id: str,
     field_delimiter: str = ',',
     enclosed_by: str = None,
     escape_unenclosed_field: str = None,
@@ -439,7 +441,7 @@ def export_snowflake_table_to_s3(
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
-    s3_conn_id: str,
+
 ):
 
     """
