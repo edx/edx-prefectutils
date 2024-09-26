@@ -73,7 +73,7 @@ def get_s3_path_for_date(date):
 
 
 @task
-def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str):
+def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, credentials: dict = None):
     logger = prefect.context.get("logger")
 
     date, report_str = download_results
@@ -83,7 +83,8 @@ def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str):
 
     s3.S3Upload(bucket=s3_bucket).run(
         report_str,
-        key=s3_key
+        key=s3_key,
+        credentials=credentials
     )
 
     return date_path
