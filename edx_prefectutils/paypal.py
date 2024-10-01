@@ -106,6 +106,7 @@ def fetch_paypal_report(
         port: str = None,
         remote_path: str = None,
         aws_credentials: dict = None,
+        argo: bool = False,
 ):
     paypal_config = getattr(config, 'paypal', None)
 
@@ -126,9 +127,15 @@ def fetch_paypal_report(
         existing_file = list_object_keys_from_s3.run(s3_bucket, s3_key, aws_credentials)
 
         if existing_file:
-            raise signals.SKIP(
-                'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
-            )
+            if not argo:
+                raise signals.SKIP(
+                    'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
+                )
+            else:
+                logger.info(
+                    'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
+                )
+                return
         else:
             logger.info("File not found, continuing download for {}.".format(date))
 
