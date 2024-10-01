@@ -108,11 +108,11 @@ def fetch_paypal_report(
         aws_credentials: dict = None,
 ):
     paypal_config = getattr(config, 'paypal', None)
-    
+
     host = getattr(paypal_config, 'host', None) or host
     port = getattr(paypal_config, 'port', None) or port
     remote_path = getattr(paypal_config, 'remote_path', None) or remote_path
-    
+
     logger = prefect.context.get("logger")
     logger.info("Pulling Paypal report for {}".format(date))
 
