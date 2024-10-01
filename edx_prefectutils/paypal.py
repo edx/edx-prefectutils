@@ -102,7 +102,18 @@ def fetch_paypal_report(
         s3_bucket: str,
         s3_path: str,
         overwrite: bool,
+        host: str = None,
+        port: str = None,
+        remote_path: str = None,
+        aws_credentials: dict = None,
+        argo: bool = False,
 ):
+    paypal_config = getattr(config, 'paypal', None)
+
+    host = getattr(paypal_config, 'host', None) or host
+    port = getattr(paypal_config, 'port', None) or port
+    remote_path = getattr(paypal_config, 'remote_path', None) or remote_path
+
     logger = prefect.context.get("logger")
     logger.info("Pulling Paypal report for {}".format(date))
 
@@ -113,16 +124,22 @@ def fetch_paypal_report(
 
         logger.info("Checking for existence of: {}".format(s3_key))
 
-        existing_file = list_object_keys_from_s3.run(s3_bucket, s3_key)
+        existing_file = list_object_keys_from_s3.run(s3_bucket, s3_key, aws_credentials)
 
         if existing_file:
-            raise signals.SKIP(
-                'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
-            )
+            if not argo:
+                raise signals.SKIP(
+                    'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
+                )
+            else:
+                logger.info(
+                    'File {} already exists and we are not overwriting. Skipping.'.format(s3_key)
+                )
+                return
         else:
             logger.info("File not found, continuing download for {}.".format(date))
 
-    transport = Transport(config.paypal.host, config.paypal.port)
+    transport = Transport(host, port)
     transport.connect(
         username=paypal_credentials.get('username'),
         password=paypal_credentials.get('password')
@@ -130,11 +147,11 @@ def fetch_paypal_report(
     sftp_connection = SFTPClient.from_transport(transport)
 
     query_date = datetime.datetime.strptime(date, "%Y-%m-%d")
-    remote_filename = get_paypal_filename(query_date, paypal_report_prefix, sftp_connection, config.paypal.remote_path)
+    remote_filename = get_paypal_filename(query_date, paypal_report_prefix, sftp_connection, remote_path)
 
     try:
         if remote_filename:
-            sftp_connection.chdir(config.paypal.remote_path)
+            sftp_connection.chdir(remote_path)
             check_paypal_report(sftp_connection, remote_filename, paypal_report_check_column_name)
             formatted_report = format_paypal_report(sftp_connection, remote_filename, date)
             return date, formatted_report
