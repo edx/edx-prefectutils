@@ -590,7 +590,7 @@ class DelimitedStringField(Field):
     def validate(self, value):
         """Accepts tuple values."""
         validation_errors = super(DelimitedStringField, self).validate(value)
-        if not(value is None or isinstance(value, tuple)):
+        if not (value is None or isinstance(value, tuple)):
             validation_errors.append('The value is not a tuple')
         return validation_errors
 
@@ -617,7 +617,7 @@ class BooleanField(Field):
     def validate(self, value):
         """Accepts boolean values."""
         validation_errors = super(BooleanField, self).validate(value)
-        if not(value is None or isinstance(value, bool)):
+        if not (value is None or isinstance(value, bool)):
             validation_errors.append('The value is not a bool')
         return validation_errors
 
