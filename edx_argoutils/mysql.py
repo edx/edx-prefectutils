@@ -8,7 +8,7 @@ from prefect import task
 from prefect.engine import signals
 from prefect.utilities.logging import get_logger
 
-from edx_prefectutils.snowflake import MANIFEST_FILE_NAME
+from edx_argoutils.snowflake import MANIFEST_FILE_NAME
 
 
 def create_mysql_connection(credentials: dict, database: str, autocommit: bool = False):

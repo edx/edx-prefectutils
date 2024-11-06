@@ -9,7 +9,7 @@ import requests
 from ddt import data, ddt, unpack
 from mock import patch
 
-from edx_prefectutils.edx_api_client import EdxApiClient
+from edx_argoutils.edx_api_client import EdxApiClient
 
 FAKE_AUTH_URL = 'http://example.com/oauth2/access_token'
 FAKE_CLIENT_ID = 'aclientid'

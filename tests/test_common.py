@@ -6,7 +6,7 @@ Tests for BigQuery utils in the `edx_prefectutils` package.
 
 from prefect.core import Flow
 
-from edx_prefectutils import common
+from edx_argoutils import common
 
 
 def test_generate_dates():

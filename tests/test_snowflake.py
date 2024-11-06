@@ -14,7 +14,7 @@ from prefect.utilities.debug import raise_on_exception
 from pytest_mock import mocker  # noqa: F401
 from snowflake.connector import ProgrammingError
 
-from edx_prefectutils import snowflake
+from edx_argoutils import snowflake
 
 
 def test_qualified_table_name():

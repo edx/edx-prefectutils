@@ -16,7 +16,7 @@ from prefect.engine import signals
 from prefect.tasks.aws import s3
 from prefect.utilities.logging import get_logger
 
-from edx_prefectutils import s3 as s3_utils
+from edx_argoutils import s3 as s3_utils
 
 MANIFEST_FILE_NAME = 'manifest.json'
 EXPORT_MAX_FILESIZE = 104857600

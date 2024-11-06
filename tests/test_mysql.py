@@ -4,7 +4,7 @@ from prefect.core import Flow
 from prefect.engine import signals
 from pytest_mock import mocker  # noqa: F401
 
-from edx_prefectutils import mysql as utils_mysql
+from edx_argoutils import mysql as utils_mysql
 
 
 @pytest.fixture

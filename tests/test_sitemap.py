@@ -8,7 +8,7 @@ import requests
 from mock import Mock, patch
 from prefect import context
 
-from edx_prefectutils.sitemap import fetch_sitemap, fetch_sitemap_urls
+from edx_argoutils.sitemap import fetch_sitemap, fetch_sitemap_urls
 
 SCRAPED_AT = '2021-10-22T15:14:16.683985+00:00'
 

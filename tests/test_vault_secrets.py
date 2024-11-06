@@ -7,7 +7,7 @@ Tests for Hashicorp Vault secrets utils in the `edx_prefectutils` package.
 from prefect import Flow, task, unmapped
 from pytest_mock import mocker  # noqa: F401
 
-from edx_prefectutils import vault_secrets
+from edx_argoutils import vault_secrets
 
 
 @task

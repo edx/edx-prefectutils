@@ -5,7 +5,7 @@ Test for S3 related tasks
 from mock import patch
 from mock.mock import MagicMock
 
-from edx_prefectutils.s3 import delete_s3_directory
+from edx_argoutils.s3 import delete_s3_directory
 
 
 @patch("edx_prefectutils.s3.list_object_keys_from_s3.run")

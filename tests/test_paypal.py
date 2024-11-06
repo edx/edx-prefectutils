@@ -6,7 +6,7 @@ import datetime
 
 from mock import Mock
 
-from edx_prefectutils.paypal import get_paypal_filename
+from edx_argoutils.paypal import get_paypal_filename
 
 
 def test_get_paypal_filename():
