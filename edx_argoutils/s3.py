@@ -6,7 +6,8 @@ import prefect
 from prefect import task
 from prefect.tasks.aws import s3
 from prefect.utilities.aws import get_boto_client
-
+import boto3
+import logging
 
 @task
 def delete_s3_directory(bucket: str = None, prefix: str = None, credentials: dict = None):
@@ -67,29 +68,33 @@ def list_object_keys_from_s3(bucket: str = None, prefix: str = '', credentials: 
         return []
 
 
-def get_s3_path_for_date(date):
+def get_s3_path_for_file(filename):
     # The path and file name inside our given bucket and S3 prefix to write the file to
-    return '{date}/{date}.json'.format(date=date)
+    return '{filename}/{filename}.json'.format(filename=filename)
 
 
-@task
 def write_report_to_s3(download_results: tuple, s3_bucket: str, s3_path: str, credentials: dict = None):
-    logger = prefect.context.get("logger")
+    logger = logging.getLogger("s3")
 
-    date, report_str = download_results
-    date_path = get_s3_path_for_date(date)
-    s3_key = s3_path + date_path
-    logger.info("Writing report to S3 for {} to {}".format(date, s3_key))
+    filename, report_str = download_results
+    file_path = get_s3_path_for_file(filename)
+    s3_key = s3_path + file_path
+    logger.info("Writing report to S3 for {} to {}".format(filename, s3_key))
 
-    s3.S3Upload(bucket=s3_bucket).run(
-        report_str,
-        key=s3_key,
-        credentials=credentials
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=credentials.get('AccessKeyId'),
+        aws_secret_access_key=credentials.get('SecretAccessKey'),
+        aws_session_token=credentials.get('SessionToken')
     )
+    s3_client.put_object(
+        Bucket=s3_bucket,
+        Key=s3_key,
+        Body=report_str,
+        ContentType='application/json'
+    )
+    return file_path
 
-    return date_path
 
-
-@task
 def get_s3_url(s3_bucket, s3_path):
     return 's3://{bucket}/{path}'.format(bucket=s3_bucket, path=s3_path)
