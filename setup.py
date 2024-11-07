@@ -71,8 +71,8 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Julia Eskew",
-    author_email='jeskew@edx.org',
+    author="Abdul Rafey",
+    author_email='arafey@2u.com',
     python_requires='>=3.8',
     license='AGPL',
     classifiers=[

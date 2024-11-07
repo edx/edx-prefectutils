@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Julia Eskew <jeskew@edx.org>
+* Abdul Rafey <arafey@2u.com>
 
 Contributors
 ------------
