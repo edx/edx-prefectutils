@@ -1,87 +1,75 @@
 """
-Utility methods and tasks for use from a Prefect flow.
+Utility functions for use in Argo flows.
 """
 
-import datetime
 import itertools
 import re
-
-import prefect
 import six
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from prefect import task
-from prefect.engine.results import PrefectResult
 from datetime import datetime, timedelta, date
 
 
 
-@task
 def get_date(date: str):
     """
     Return today's date string if date is None. Otherwise return the passed parameter value.
-    prefect.context.today is only available at task level, so we cannot use it as a default parameter value.
     """
     if date is None:
-        return prefect.context.today
+        return datetime.today().strftime('%Y-%m-%d')
     else:
         return date
 
 
-@task(result=PrefectResult())
 def generate_dates(start_date: str, end_date: str, date_format: str = "%Y%m%d"):
     """
     Generates a list of date strings in the format specified by `date_format` from
     start_date up to but excluding end_date.
     """
     if not start_date:
-        start_date = prefect.context.yesterday
+        start_date = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
     if not end_date:
-        end_date = prefect.context.today
+        end_date = datetime.today().strftime("%Y-%m-%d")
 
-    parsed_start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    parsed_end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+    parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d")
     dates = []
     while parsed_start_date < parsed_end_date:
         dates.append(parsed_start_date)
-        parsed_start_date = parsed_start_date + datetime.timedelta(days=1)
+        parsed_start_date = parsed_start_date + timedelta(days=1)
 
     return [date.strftime(date_format) for date in dates]
 
 
-@task
 def generate_month_start_dates(start_date: str, end_date: str, date_format: str = "%Y-%m-%d"):
     """
     Return a list of first days of months within the specified date range.
     If start_date or end_date is not provided, defaults to yesterday or today respectively.
-    prefect.context.today is only available at task level, so we cannot use it as a default parameter value.
     """
     if not start_date:
-        start_date = prefect.context.yesterday
+        start_date = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
     if not end_date:
-        end_date = prefect.context.today
+        end_date = datetime.today().strftime("%Y-%m-%d")
 
     # Since our intention is to extract first day of months, we will start by modifying the start and end date
     # to represent the first day of month.
-    parsed_start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").replace(day=1)
-    parsed_end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").replace(day=1)
+    parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(day=1)
+    parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d").replace(day=1)
     dates = []
     current_date = parsed_start_date
     while current_date <= parsed_end_date:
         dates.append(current_date)
         # The addition of 32 days to current_date and then setting the day to 1 is a way to ensure that we move to
         # the beginning of the next month, even if the month doesn't have exactly 32 days.
-        current_date += datetime.timedelta(days=32)
+        current_date += timedelta(days=32)
         current_date = current_date.replace(day=1)
 
     return [date.strftime(date_format) for date in dates]
 
 
-@task
 def get_unzipped_cartesian_product(input_lists: list):
     """
-    Generate an unzipped cartesian product of the given list of lists, useful for
-    generating task parameters for mapping.
+    Generate an unzipped cartesian product of the given list of lists.
 
     For example, get_unzipped_cartesian_product([[1, 2, 3], ["a", "b", "c"]]) would return:
 
