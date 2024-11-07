@@ -12,6 +12,8 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from prefect import task
 from prefect.engine.results import PrefectResult
+from datetime import datetime, timedelta, date
+
 
 
 @task
@@ -110,3 +112,52 @@ def get_filename_safe_course_id(course_id, replacement_char='_'):
     # We represent the first four with \w.
     # TODO: Once we support courses with unicode characters, we will need to revisit this.
     return re.sub(r'[^\w\.\-]', six.text_type(replacement_char), filename)
+
+def generate_date_range(start_date= None, end_date= None, is_daily: bool = None):
+    """
+    Generate a list of dates depending on parameters passed. Dates are inclusive.
+        Custom dates is top priority: start_date & end_date are set, is_daily = False
+        Daily run: start_date & end_date are both None, is_daily = True
+        True-up run: start_date & end_date are both None, is_daily = False
+
+    Args:
+        start_date (str): The start date in YYYY-MM-DD format
+        end_date (str): The end date in YYYY-MM-DD format
+        is_daily (bool): Designates if last completed day to run
+    """
+
+    if start_date is not None and end_date is not None and is_daily is False:
+        # Manual run: user entered parameters for custom dates
+        #logger.info("Setting dates for manual run...")
+        #start_date= start_date.strftime('%Y-%m-%d')
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        #end_date= end_date.strftime('%Y-%m-%d')
+
+    elif start_date is None and end_date is None and is_daily is True:
+        # Daily run: minus 2 lag completed day, eg. if today is 9/14, output is 9/12
+        # this is due to timing issues with data freshness for STRIPE_RAW <> Snowflake share
+        minus_two_lag_date = datetime.strptime(str(date.today()), "%Y-%m-%d").date() - timedelta(days=2)
+        start_date, end_date = minus_two_lag_date, minus_two_lag_date
+
+    elif start_date is None and end_date is None and is_daily is False:
+        # True-up: Calculate the last completed month
+        today = datetime.now().date()
+        current_month_start = datetime(today.year, today.month, 1).date()
+        last_month_end = current_month_start - timedelta(days=1)
+        last_month_start = datetime(last_month_end.year, last_month_end.month, 1).date()
+
+        start_date = last_month_start
+        end_date = last_month_end
+
+    else:
+        raise Exception("Incorrect parameters passed!")
+
+    current_date = start_date
+    date_list = []
+
+    while current_date <= end_date:
+        date_list.append(current_date)
+        current_date += timedelta(days=1)
+
+    return date_list
