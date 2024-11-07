@@ -8,7 +8,7 @@ from os.path import basename, join, splitext
 from urllib.parse import urlparse
 import boto3
 import requests
-from common import getdate
+from .common import get_date
 
 
 def fetch_sitemap_urls(sitemap_index_url: str) -> str:
@@ -26,7 +26,7 @@ def fetch_sitemap(sitemap_url: str):
     """
     Fetches sitemap data from a given sitemap URL.
     """
-    scraped_at = getdate(None)
+    scraped_at = get_date(None)
     r = requests.get(sitemap_url)
     sitemap_xml = r.text
     tree = ET.fromstring(sitemap_xml)
@@ -40,15 +40,20 @@ def fetch_sitemap(sitemap_url: str):
     return sitemap_filename, json.dumps(sitemap_json)
 
 
-def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str):
+def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str, credentials: dict = {}):
     """
     Writes sitemap data in JSON format to S3.
     """
     filename, sitemap_json = sitemap_data
-    today = getdate(None)
+    today = get_date(None)
     date_path = f'{today}/{filename}.json'
     s3_key = f'{s3_path}/{date_path}'
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=credentials.get('AccessKeyId'),
+        aws_secret_access_key=credentials.get('SecretAccessKey'),
+        aws_session_token=credentials.get('SessionToken')
+    )
     s3_client.put_object(
         Bucket=s3_bucket,
         Key=s3_key,
