@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import backoff
 import requests
-from prefect.utilities.logging import get_logger
+import logging
 from requests.auth import AuthBase
 
 DEFAULT_RETRY_STATUS_CODES = (
@@ -16,6 +16,7 @@ DEFAULT_RETRY_STATUS_CODES = (
     520,                                    # This is a custom Cloudwatch code for "Unknown error".
 )
 DEFAULT_TIMEOUT_SECONDS = 7200
+logger = logging.getLogger("edx_api_client")
 
 
 class EdxApiClient(object):
@@ -57,7 +58,6 @@ class EdxApiClient(object):
 
     def ensure_oauth_access_token(self):
         """Retrieves OAuth 2.0 access token using the client credentials grant and stores it in the request session."""
-        logger = get_logger()
         now = datetime.utcnow()
         if self._expires_at is None or now >= self._expires_at:
             logger.info('Token is expired or missing, requesting a new one.')
@@ -203,7 +203,6 @@ class SuppliedAuth(AuthBase):
 
 def log_response_hook(response, *args, **kwargs):  # pylint: disable=unused-argument
     """Log summary information about every request made."""
-    logger = get_logger()
     logger.info(
         "[{}] [{}] [{}] {}".format(
             response.request.method, response.status_code, response.elapsed.total_seconds(), response.url
