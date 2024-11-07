@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tests for Snowflake utils in the `edx_prefectutils` package.
+Tests for Snowflake utils in the `edx_argoutils` package.
 """
 
 import json
@@ -306,7 +306,7 @@ def test_export_snowflake_table_to_s3_with_exception(mock_sf_connection):
 
 def test_export_snowflake_table_to_s3_overwrite(mock_sf_connection):  # noqa: F811
     mock_cursor = mock_sf_connection.cursor()
-    with mock.patch('edx_prefectutils.s3.delete_s3_directory.run') as mock_delete_s3_directory:
+    with mock.patch('edx_argoutils.s3.delete_s3_directory.run') as mock_delete_s3_directory:
         with Flow("test") as f:
             snowflake.export_snowflake_table_to_s3(
                 sf_credentials={},
@@ -336,7 +336,7 @@ def test_export_snowflake_table_to_s3_overwrite(mock_sf_connection):  # noqa: F8
 
 def test_export_snowflake_table_to_s3_no_escape(mock_sf_connection):  # noqa: F811
     mock_cursor = mock_sf_connection.cursor()
-    with mock.patch('edx_prefectutils.s3.delete_s3_directory.run'):
+    with mock.patch('edx_argoutils.s3.delete_s3_directory.run'):
         with Flow("test") as f:
             snowflake.export_snowflake_table_to_s3(
                 sf_credentials={},
@@ -363,7 +363,7 @@ def test_export_snowflake_table_to_s3_no_escape(mock_sf_connection):  # noqa: F8
 
 def test_export_snowflake_table_to_s3_no_enclosure(mock_sf_connection):  # noqa: F811
     mock_cursor = mock_sf_connection.cursor()
-    with mock.patch('edx_prefectutils.s3.delete_s3_directory.run'):
+    with mock.patch('edx_argoutils.s3.delete_s3_directory.run'):
         with Flow("test") as f:
             snowflake.export_snowflake_table_to_s3(
                 sf_credentials={},
@@ -390,7 +390,7 @@ def test_export_snowflake_table_to_s3_no_enclosure(mock_sf_connection):  # noqa:
 
 def test_export_snowflake_table_to_s3_no_null_if(mock_sf_connection):  # noqa: F811
     mock_cursor = mock_sf_connection.cursor()
-    with mock.patch('edx_prefectutils.s3.delete_s3_directory.run'):
+    with mock.patch('edx_argoutils.s3.delete_s3_directory.run'):
         with Flow("test") as f:
             snowflake.export_snowflake_table_to_s3(
                 sf_credentials={},

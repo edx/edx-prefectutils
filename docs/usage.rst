@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use edx-prefectutils in a project::
+To use edx-argoutils in a project::
 
-    import edx_prefectutils
+    import edx_argoutils

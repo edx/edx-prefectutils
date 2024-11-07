@@ -1,4 +1,4 @@
-Welcome to edx-prefectutils's documentation!
+Welcome to edx-argoutils's documentation!
 =========================================
 
 .. toctree::

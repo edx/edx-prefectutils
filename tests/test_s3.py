@@ -8,8 +8,8 @@ from mock.mock import MagicMock
 from edx_argoutils.s3 import delete_s3_directory
 
 
-@patch("edx_prefectutils.s3.list_object_keys_from_s3.run")
-@patch("edx_prefectutils.s3.get_boto_client")
+@patch("edx_argoutils.s3.list_object_keys_from_s3.run")
+@patch("edx_argoutils.s3.get_boto_client")
 def test_delete_s3_directory(boto_client_mock, list_object_keys_from_s3_mock):
     """
     Test the delete_s3_directory task

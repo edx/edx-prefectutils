@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install edx-prefectutils, run this command in your terminal:
+To install edx-argoutils, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install edx_prefectutils
+    $ pip install edx_argoutils
 
-This is the preferred method to install edx-prefectutils, as it will always install the most recent stable release.
+This is the preferred method to install edx-argoutils, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,19 +26,19 @@ you through the process.
 From sources
 ------------
 
-The sources for edx-prefectutils can be downloaded from the `Github repo`_.
+The sources for edx-argoutils can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/edx/edx-prefectutils
+    $ git clone git://github.com/2uinc/edx-argoutils
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/edx/edx-prefectutils/tarball/master
+    $ curl -OJL https://github.com/2uinc/edx-argoutils/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/edx/edx-prefectutils
-.. _tarball: https://github.com/edx/edx-prefectutils/tarball/master
+.. _Github repo: https://github.com/2uinc/edx-argoutils
+.. _tarball: https://github.com/2uinc/edx-argoutils/tarball/master

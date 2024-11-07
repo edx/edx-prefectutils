@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Tests for BigQuery utils in the `edx_prefectutils` package.
+Tests for BigQuery utils in the `edx_argoutils` package.
 """
 
 from prefect.core import Flow

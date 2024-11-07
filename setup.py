@@ -53,7 +53,7 @@ def is_requirement(line):
         line.startswith('-c')
     )
 
-VERSION = get_version('edx_prefectutils', '__init__.py')
+VERSION = get_version('edx_argoutils', '__init__.py')
 
 if sys.argv[-1] == 'tag':
     print("Tagging the version on github:")
@@ -83,22 +83,22 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Utility code to assist in writing Prefect Flows.",
+    description="Utility code to assist in writing Argo Flows.",
     entry_points={
         'console_scripts': [
-            'edx_prefectutils=edx_prefectutils.cli:main',
+            'edx_argoutils=edx_argoutils.cli:main',
         ],
     },
     install_requires=load_requirements('requirements/base.in'),
     long_description=README,
     include_package_data=True,
-    keywords='edx_prefectutils',
-    name='edx-prefectutils',
-    packages=find_packages(include=['edx_prefectutils', 'edx_prefectutils.*']),
+    keywords='edx_argoutils',
+    name='edx-argoutils',
+    packages=find_packages(include=['edx_argoutils', 'edx_argoutils.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/edx/edx-prefectutils',
+    url='https://github.com/2uinc/edx-argoutils',
     version=VERSION,
     zip_safe=False,
 )

@@ -39,7 +39,7 @@ class EdxApiClientTestCase(TestCase):
                 """Return the time specified by the time offset"""
                 return self.current_time + timedelta(seconds=self.time_offset)
 
-        datetime_patcher = patch('edx_prefectutils.edx_api_client.datetime', MockDateTime)
+        datetime_patcher = patch('edx_argoutils.edx_api_client.datetime', MockDateTime)
         datetime_patcher.start()
         self.addCleanup(datetime_patcher.stop)
 

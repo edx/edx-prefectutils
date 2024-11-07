@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# edx_prefectutils documentation build configuration file, created by
+# edx_argoutils documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  9 13:47:02 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -46,9 +46,9 @@ source_suffix = '.rst'
 top_level_doc = 'index'
 
 # General information about the project.
-project = 'edx-prefectutils'
-copyright = "2020, Julia Eskew"
-author = "Julia Eskew"
+project = 'edx-argoutils'
+copyright = "2024, Abdul Rafey"
+author = "Abdul Rafey"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -100,7 +100,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'edx_prefectutilsdoc'
+htmlhelp_basename = 'edx_argoutilsdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------
@@ -127,9 +127,9 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto, manual, or own class]).
 latex_documents = [
-    (top_level_doc, 'edx_prefectutils.tex',
-     'edx-prefectutils Documentation',
-     'Julia Eskew', 'manual'),
+    (top_level_doc, 'edx_argoutils.tex',
+     'edx-argoutils Documentation',
+     'Abdul Rafey', 'manual'),
 ]
 
 
@@ -138,8 +138,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (top_level_doc, 'edx_prefectutils',
-     'edx-prefectutils Documentation',
+    (top_level_doc, 'edx_argoutils',
+     'edx-argoutils Documentation',
      [author], 1)
 ]
 
@@ -150,10 +150,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (top_level_doc, 'edx_prefectutils',
-     'edx-prefectutils Documentation',
+    (top_level_doc, 'edx_argoutils',
+     'edx-argoutils Documentation',
      author,
-     'edx_prefectutils',
+     'edx_argoutils',
      'One line description of project.',
      'Miscellaneous'),
 ]

@@ -1,4 +1,4 @@
-* edx-prefectutils version:
+* edx-argoutils version:
 * Python version:
 * Operating System:
 
