@@ -224,7 +224,6 @@ def load_ga_data_to_snowflake(
         sf_connection.close()
 
 
-@task
 def load_s3_data_to_snowflake(
     date: str,
     date_property: str,

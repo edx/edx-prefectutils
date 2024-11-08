@@ -47,7 +47,7 @@ def write_sitemap_to_s3(sitemap_data: str, s3_bucket: str, s3_path: str, credent
     filename, sitemap_json = sitemap_data
     today = get_date(None)
     date_path = f'{today}/{filename}.json'
-    s3_key = f'{s3_path}/{date_path}'
+    s3_key = f'{s3_path}{date_path}'
     s3_client = boto3.client(
         's3',
         aws_access_key_id=credentials.get('AccessKeyId'),
