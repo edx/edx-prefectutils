@@ -1,9 +1,10 @@
 """
-Utility methods and tasks for working with Snowflake from a Prefect flow.
+Utility methods and tasks for working with Snowflake from a Argo flow.
 """
 import json
 import os
 from collections import namedtuple
+import logging
 from typing import List, TypedDict
 from urllib.parse import urlparse
 
@@ -20,6 +21,10 @@ from edx_argoutils import s3 as s3_utils
 
 MANIFEST_FILE_NAME = 'manifest.json'
 EXPORT_MAX_FILESIZE = 104857600
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
 
 
 class SFCredentials(TypedDict, total=False):
@@ -281,9 +286,9 @@ def load_s3_data_to_snowflake(
       disable_existence_check (bool, optional): Whether to disable check for existing data, useful when
               always appending to the table regardless of any existing data for that provided `date`
     """
-    logger = get_logger()
+    logger = logging.getLogger("Snowflake Utility")
     if not file and not pattern:
-        raise signals.FAIL('Either `file` or `pattern` must be specified to run this task.')
+        raise ValueError("Either `file` or `pattern` must be specified to run this task.")
 
     sf_connection = create_snowflake_connection(sf_credentials, sf_role, warehouse=sf_warehouse)
 
@@ -319,7 +324,8 @@ def load_s3_data_to_snowflake(
                 raise
 
     if row and not overwrite:
-        raise signals.SKIP('Skipping task as data for the date exists and no overwrite was provided.')
+        logger.info("Skipping task as data for the date exists and no overwrite was provided.")
+        return
     else:
         logger.info("Continuing with S3 load for {}".format(date))
 
