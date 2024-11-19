@@ -13,9 +13,6 @@ import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from prefect import task
-from prefect.engine import signals
-from prefect.tasks.aws import s3
-from prefect.utilities.logging import get_logger
 
 from edx_argoutils import s3 as s3_utils
 
@@ -420,7 +417,6 @@ def load_s3_data_to_snowflake(
         sf_connection.close()
 
 
-@task
 def export_snowflake_table_to_s3(
     sf_credentials: SFCredentials,
     sf_database: str,
@@ -470,7 +466,7 @@ def export_snowflake_table_to_s3(
               copy option.
       generate_manifest (bool, optional): Whether to generate a manifest file in S3. Defaults to `FALSE`.
     """
-    logger = get_logger()
+    logger = logging.getLogger("Export Snowflake Table to S3 Utility")
 
     sf_connection = create_snowflake_connection(
         credentials=sf_credentials,
@@ -489,7 +485,7 @@ def export_snowflake_table_to_s3(
     if overwrite:
         logger.info("Deleting existing data in S3 bucket: {bucket} with prefix: {prefix}".format(
             bucket=export_bucket, prefix=export_prefix))
-        s3_utils.delete_s3_directory.run(export_bucket, export_prefix)
+        s3_utils.delete_s3_directory(export_bucket, export_prefix)
 
     escape_clause = '' if escape_unenclosed_field is None \
         else "ESCAPE_UNENCLOSED_FIELD = NONE" if escape_unenclosed_field == 'NONE' \
@@ -557,14 +553,16 @@ def export_snowflake_table_to_s3(
                     "urls": s3_file_paths,
                 }
             )
-            s3.S3Upload(bucket=export_bucket).run(
-                json.dumps(manifest_file_content),
-                key=s3_manifest_file_prefix
+            s3_client = s3_utils.get_s3_client()
+            s3_client.put_object(
+                Bucket=export_bucket,
+                Key=s3_manifest_file_prefix,
+                Body=json.dumps(manifest_file_content)
             )
     except snowflake.connector.ProgrammingError as e:
         if 'Files already existing at the unload destination' in e.msg:
             logger.error("Files already exist at {destination}".format(destination=export_path))
-            raise signals.FAIL('Files already exist. Use overwrite option to force unloading.')
+            raise Exception('Files already exist. Use overwrite option to force unloading.')
         else:
             raise
     finally:
