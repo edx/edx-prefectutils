@@ -1,15 +1,16 @@
 """
 Tasks for interacting with Aurora MySQL.
 """
+import logging
 import os
-
 import mysql.connector
-from prefect import task
-from prefect.engine import signals
-from prefect.utilities.logging import get_logger
 
 from edx_argoutils.snowflake import MANIFEST_FILE_NAME
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
 
 def create_mysql_connection(credentials: dict, database: str, autocommit: bool = False):
 
@@ -44,7 +45,6 @@ def create_mysql_connection(credentials: dict, database: str, autocommit: bool =
     return connection
 
 
-@task
 def load_s3_data_to_mysql(
     aurora_credentials: dict,
     database: str,
@@ -98,7 +98,7 @@ def load_s3_data_to_mysql(
             query = "DROP TABLE IF EXISTS {table}".format(table=table)
             connection.cursor().execute(query)
 
-    logger = get_logger()
+    logger = logging.getLogger("load_s3_data_to_mysql")
 
     connection = create_mysql_connection(aurora_credentials, database)
 
@@ -120,7 +120,7 @@ def load_s3_data_to_mysql(
         table=table,
         table_schema=table_schema
     )
-    logger.debug(query)
+    logger.info(query)
     connection.cursor().execute(query)
 
     # Check for existing data
@@ -130,7 +130,8 @@ def load_s3_data_to_mysql(
     row = cursor.fetchone()
 
     if row and not overwrite:
-        raise signals.SKIP('Skipping task as data already exists in the dest. table and no overwrite was provided.')
+        logger.info('Skipping task as data already exists in the destination table and no overwrite was provided.')
+        return
 
     # Create a temp table for loading data
     if overwrite and overwrite_with_temp_table:
@@ -141,7 +142,7 @@ def load_s3_data_to_mysql(
     try:
         if row and overwrite and not overwrite_with_temp_table:
             query = "DELETE FROM {table} {record_filter}".format(table=table, record_filter=record_filter)
-            logger.debug("Deleting existing data for {table}".format(table=table))
+            logger.info("Deleting existing data for {table}".format(table=table))
             connection.cursor().execute(query)
 
         if use_manifest:
@@ -177,7 +178,7 @@ def load_s3_data_to_mysql(
             # Commit if we're not getting an implicit commit from RENAME.
             connection.commit()
     except Exception as e:
-        logger.error(str(e))
+        logger.info(str(e))
         connection.rollback()
         raise
     finally:
