@@ -14,7 +14,7 @@ logging.basicConfig(
 
 def create_mysql_connection(credentials: dict, database: str, autocommit: bool = False):
 
-    user = credentials['user']
+    user = credentials['username']
     password = credentials['password']
     host = credentials['host']
 
