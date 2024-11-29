@@ -434,6 +434,7 @@ def export_snowflake_table_to_s3(
     overwrite: bool = True,
     single: bool = False,
     generate_manifest: bool = False,
+    aws_credentials: dict = None,
 ):
 
     """
@@ -485,7 +486,7 @@ def export_snowflake_table_to_s3(
     if overwrite:
         logger.info("Deleting existing data in S3 bucket: {bucket} with prefix: {prefix}".format(
             bucket=export_bucket, prefix=export_prefix))
-        s3_utils.delete_s3_directory(export_bucket, export_prefix)
+        s3_utils.delete_s3_directory(export_bucket, export_prefix, aws_credentials)
 
     escape_clause = '' if escape_unenclosed_field is None \
         else "ESCAPE_UNENCLOSED_FIELD = NONE" if escape_unenclosed_field == 'NONE' \
@@ -553,7 +554,7 @@ def export_snowflake_table_to_s3(
                     "urls": s3_file_paths,
                 }
             )
-            s3_client = s3_utils.get_s3_client()
+            s3_client = s3_utils.get_s3_client(aws_credentials)
             s3_client.put_object(
                 Bucket=export_bucket,
                 Key=s3_manifest_file_prefix,

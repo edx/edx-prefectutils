@@ -4,7 +4,7 @@
 Tests for Common utils in the `edx_argoutils`.
 """
 
-from edx_prefectutils import common
+from edx_argoutils import common
 
 
 def test_generate_dates():
