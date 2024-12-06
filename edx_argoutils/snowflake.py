@@ -376,7 +376,9 @@ def load_s3_data_to_snowflake(
 
         if file:
             logger.info("Loading file {}".format(file))
-            files_paramater = "FILES = ( '{}' )".format(file)
+            files = file.split(',')
+            # files_paramater = "FILES = ( '{}' )".format(file)
+            files_parameter = "FILES = ({})".format(", ".join(["'{}'".format(f) for f in files]))
 
         if pattern:
             logger.info("Loading pattern {}".format(pattern))
