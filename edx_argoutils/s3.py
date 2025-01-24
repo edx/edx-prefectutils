@@ -63,19 +63,32 @@ def list_object_keys_from_s3(bucket: str = None, prefix: str = '', credentials: 
     credentials (dict): AWS credentials, if None boto will fall back the usual methods of resolution.
     """
     s3_client = get_s3_client(credentials)
-    
 
-    found_objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    all_object_keys = []
 
-    logger.info(f"Found objects: {found_objects}")
+    response = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+
+    if 'Contents' in response:
+        all_object_keys.extend([o['Key'] for o in response['Contents']])
+
+    while response.get('IsTruncated'):  # Check if there are more objects to fetch
+        # Use the NextContinuationToken to get the next batch of results
+        response = s3_client.list_objects_v2(
+            Bucket=bucket,
+            Prefix=prefix,
+            ContinuationToken=response['NextContinuationToken']
+        )
+
+        # Add the new batch of results to the list
+        if 'Contents' in response:
+            all_object_keys.extend([o['Key'] for o in response['Contents']])
+
+    # Log the total number of found objects
+    logger.info(f"Total objects found: {len(all_object_keys)}")
+    logger.info(f"Found objects: {all_object_keys}")
     # edx_legacy/segment-config/dev/load_segment_config_to_snowflake/2024-11-08/2024-11-08.json
 
-    if found_objects['KeyCount']:
-        return [
-            o['Key'] for o in found_objects['Contents']
-        ]
-    else:
-        return []
+    return all_object_keys
 
 
 def get_s3_path_for_date(filename):
