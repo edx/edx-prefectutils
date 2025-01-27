@@ -12,7 +12,6 @@ import backoff
 import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from prefect import task
 
 from edx_argoutils import s3 as s3_utils
 
