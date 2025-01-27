@@ -99,10 +99,6 @@ def qualified_stage_name(database, schema, table) -> str:
     )
 
 
-@task
-@backoff.on_exception(backoff.expo,
-                      snowflake.connector.ProgrammingError,
-                      max_tries=3)
 def load_ga_data_to_snowflake(
     sf_credentials: SFCredentials,
     sf_database: str,
