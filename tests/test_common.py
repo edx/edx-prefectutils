@@ -5,6 +5,8 @@ Tests for Common utils in the `edx_argoutils`.
 """
 
 from edx_argoutils import common
+from datetime import datetime, date
+from unittest.mock import patch
 
 
 def test_generate_dates():
@@ -31,3 +33,47 @@ def test_get_unzipped_cartesian_product():
         (1, 1, 1, 2, 2, 2, 3, 3, 3),
         ("a", "b", "c", "a", "b", "c", "a", "b", "c")
     ]
+    
+
+def test_generate_date_range():
+    # Test Case 1: Custom date range (is_daily=False)
+    result = common.generate_date_range(
+        start_date='2025-01-01',
+        end_date='2025-01-05',
+        is_daily=False
+    )
+    assert result == [
+        datetime.strptime(date, '%Y-%m-%d').date()
+        for date in ['2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04', '2025-01-05']
+    ]
+
+    # Test Case 2: Daily run (is_daily=True) with mock
+    fixed_today = date(2025, 1, 28)  # Assume today's date is 2025-01-28
+    with patch('edx_argoutils.common.date') as mock_date:
+        mock_date.today.return_value = fixed_today
+        mock_date.side_effect = lambda *args, **kwargs: date(*args, **kwargs)
+
+        result = common.generate_date_range(is_daily=True)
+        expected = [date(2025, 1, 26)]  # Two days before fixed_today
+        assert result == expected, f"Expected {expected}, but got {result}"
+
+    #Test Case 3: True-up scenario (is_daily=False, no start_date and end_date)
+    with patch('edx_argoutils.common.date') as mock_date:
+        mock_date.today.return_value = fixed_today
+        mock_date.side_effect = lambda *args, **kwargs: date(*args, **kwargs)
+
+        result = common.generate_date_range(is_daily=False)
+        expected = [date(2024, 12, d) for d in range(1, 32)]  # Last completed month
+        assert result == expected, f"Expected {expected}, but got {result}"
+
+    # Test Case 4: Invalid parameters
+    try:
+        common.generate_date_range(
+            start_date="2025-01-01",
+            end_date=None,
+            is_daily=False
+        )
+    except Exception as e:
+        assert str(e) == "Incorrect parameters passed!"
+    else:
+        assert False, "Expected an exception but none was raised!"
