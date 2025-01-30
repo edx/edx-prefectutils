@@ -63,7 +63,7 @@ def test_generate_date_range():
         mock_date.side_effect = lambda *args, **kwargs: date(*args, **kwargs)
 
         result = common.generate_date_range(is_daily=False)
-        expected = [date(2024, 12, d) for d in range(1, 32)]  # Last completed month
+        expected = [date(2024, 12, d) for d in range(1, 32)]  #Last completed month
         assert result == expected, f"Expected {expected}, but got {result}"
 
     # Test Case 4: Invalid parameters
