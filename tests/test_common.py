@@ -7,7 +7,7 @@ Tests for Common utils in the `edx_argoutils`.
 from edx_argoutils import common
 from datetime import datetime, date
 from unittest.mock import patch
-
+from opaque_keys.edx.keys import CourseKey
 
 def test_generate_dates():
     result = common.generate_dates(
@@ -34,6 +34,18 @@ def test_get_unzipped_cartesian_product():
         ("a", "b", "c", "a", "b", "c", "a", "b", "c")
     ]
     
+
+def test_valid_course_id():
+    course_id = "course-v1:BerkeleyX+CS198.SDC.1+1T2021"
+    result = "BerkeleyX_CS198.SDC.1_1T2021" 
+    with patch.object(CourseKey, 'from_string') as mock_from_string:
+        mock_from_string.return_value._to_string.return_value = result
+        assert result == common.get_filename_safe_course_id(course_id)
+
+def test_invalid_course_id():
+    course_id = "BerkeleyX!CS198.SDC.1!1T2021"
+    result = "BerkeleyX_CS198.SDC.1_1T2021"
+    assert result == common.get_filename_safe_course_id(course_id) 
 
 def test_generate_date_range():
     # Test Case 1: Custom date range (is_daily=False)
