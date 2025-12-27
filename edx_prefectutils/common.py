@@ -12,6 +12,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from prefect import task
 from prefect.engine.results import PrefectResult
+from prefect.utilities.aws import get_boto_client
 
 
 @task
@@ -110,3 +111,33 @@ def get_filename_safe_course_id(course_id, replacement_char='_'):
     # We represent the first four with \w.
     # TODO: Once we support courses with unicode characters, we will need to revisit this.
     return re.sub(r'[^\w\.\-]', six.text_type(replacement_char), filename)
+
+@task
+def send_email(
+    subject: str,
+    body: str,
+    sender_email: str,
+    recipient_email: str,
+) -> None:
+    """
+    Send an email.
+
+    Args:
+        subject (str): The subject of the email
+        body (str): The body of the email
+        sender_email (str): The email address to send the email from
+        recipient_email (str): The email address to send the email to
+    """
+    #logger.info(f"Sending email to recipient: {recipient_email}...")
+
+    client = get_boto_client("ses")
+    response = client.send_email(
+        Source=sender_email,
+        Destination={"ToAddresses": [recipient_email]},
+        Message={
+            "Subject": {"Data": subject},
+            "Body": {"Text": {"Data": body}},
+        },
+    )
+
+    #logger.info("Successfully sent email!")
