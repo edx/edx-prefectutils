@@ -20,7 +20,7 @@ jobs:
           run: pip install -r requirements/pip.txt
 
         - name: Install build tools
-          run: pip install --upgrade setuptools wheel
+          run: pip install --upgrade "setuptools>=65" "wheel>=0.38"
 
         - name: Build package
           run: python setup.py sdist bdist_wheel
